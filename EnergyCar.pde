@@ -4,10 +4,11 @@ class EnergyCar{
 	float x,y,wid;
 	float vel;
 	float cur_position=0;
-	float dest_vel;
-	int tmove=0;
+	float src_position=0;
+	float dest_position=0;
+	float tmove=0;
 
-	float MOVE_INTER=25;
+	float MOVE_VEL=.1;
 
 	String user_id;
 	int color_index;
@@ -35,7 +36,7 @@ class EnergyCar{
 			if(color_index==0) pg.fill(255,0,0,150);
 			else pg.fill(0,255,0,150);
 
-			pg.rect(color_index*width/2,0,width/2,height);
+			pg.rect(0,0,1024,400);
 
 			pg.popStyle();
 		}
@@ -55,13 +56,12 @@ class EnergyCar{
 	
 	}
 	void update(){
-		if(tmove>0){
-			cur_position+=dest_vel;
-			// print(cur_position);
-			tmove--;
+		if(tmove<1){
+			cur_position=lerp(src_position,dest_position,tmove);
+			tmove+=MOVE_VEL;
 		}
 		if(start_run){
-			run_distance+=random(-.1,.5);
+			run_distance+=random(-.1,.3);
 			run_distance=constrain(run_distance,-DEST_DIST,DEST_DIST);
 		} 
 	}
@@ -73,13 +73,12 @@ class EnergyCar{
 		start_run=false;
 	}
 	void updatePosition(int delta_position){
-
-		println("go "+delta_position);
-		if(tmove<=0){
-			dest_vel=(delta_position)/MOVE_INTER;
-			println(dest_vel);
-			tmove=(int)MOVE_INTER;
-		}
+		if(tmove<1 && tmove>0) return;
+		
+		src_position=lerp(src_position,dest_position,tmove);
+		tmove=0;
+		dest_position=constrain(dest_position+delta_position,-1,1);
+		println("go "+dest_position);
 	}
 	boolean arriveGoal(){
 		return run_distance>=DEST_DIST;

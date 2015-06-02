@@ -1,11 +1,18 @@
 
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
+
+//final String SERVER_IP="54.250.171.10:5055";
+final String SERVER_IP="192.168.2.226:5055";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
 	static final String LOG_TAG="PhotonClient";
 	private int m_eventCount;
-    
+    boolean is_connected=true;
+    boolean isReconnecting=false;
+
 	public PhotonClient(){
 		super();
 		
@@ -21,10 +28,24 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                     println("service error: "+e);
                 }
 				try{
-					Thread.sleep(25);
-				}catch (InterruptedException e){
+					Thread.sleep(40);
+				}catch(InterruptedException e){
 					e.printStackTrace();
 				}	
+
+                // reconnect when disconnected!
+                if(!is_connected && !isReconnecting){
+                    Timer timer=new Timer();
+                    TimerTask task=new TimerTask(){
+                        @Override
+                        public void run(){
+                            connect();
+                        }
+                    };
+                    timer.schedule(task, 3000);
+                    println(">>> Reconnect in 3 sec");
+                    isReconnecting=true;
+                }
 			}
 		}else{
 			println("Connection Fail!");
@@ -33,7 +54,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	}
 	public boolean connect(){
 		this.loadBalancingPeer=new LoadBalancingPeer(this,ConnectionProtocol.Udp);
-		if(this.loadBalancingPeer.connect("192.168.2.226:5055", "STPhotonServer")){
+		if(this.loadBalancingPeer.connect(SERVER_IP, "STPhotonServer")){
 			return true;
 		}
 		return false;
@@ -62,10 +83,12 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         switch(statusCode){
             case Connect:
                 println("Connect!");
-               
+                is_connected=true;
                 break;
             case Disconnect:
                 println("Disconnect!");
+                is_connected=false;
+                isReconnecting=false;
                 break;
             default:
             	break;
@@ -141,11 +164,14 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         println("--------------------\nOpResponse: "+rcv_event.toString()+"  "+millis());
 
         switch(rcv_event){
-            case Server_Game_Info:
-                setGame((Integer)params.get((byte)1));
+            case Server_Login_Success:
                 sendIsLedEvent();
                 break;
+            case Server_Game_Info:
+                setGame((Integer)params.get((byte)1));
+                break;
             case Server_LConnected:
+                setGame((Integer)params.get((byte)1));
                 println("Connected as LED");
                 break;
             case Server_Score_Success:
