@@ -3,7 +3,7 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
-//final String SERVER_IP="54.250.171.10:5055";
+// final String SERVER_IP="210.65.11.248:5055";
 final String SERVER_IP="192.168.2.226:5055";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
@@ -34,7 +34,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 				}	
 
                 // reconnect when disconnected!
-                if(!is_connected && !isReconnecting){
+                if(!OFFLINE && !is_connected && !isReconnecting){
                     Timer timer=new Timer();
                     TimerTask task=new TimerTask(){
                         @Override
@@ -54,7 +54,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	}
 	public boolean connect(){
 		this.loadBalancingPeer=new LoadBalancingPeer(this,ConnectionProtocol.Udp);
-		if(this.loadBalancingPeer.connect(SERVER_IP, "STPhotonServer")){
+		if(this.loadBalancingPeer.connect(SERVER_IP, "STGameB")){
 			return true;
 		}
 		return false;
@@ -68,6 +68,9 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LJoin.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
     }
     public void sendScoreEvent(int score1,int score2){
+
+
+        println("--------- Send Score : "+score1+" / "+score2+" ----------");
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         eventContent.put((byte)1, score1);              
         eventContent.put((byte)2, score2);              
@@ -174,9 +177,9 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                 setGame((Integer)params.get((byte)1));
                 println("Connected as LED");
                 break;
-            case Server_Score_Success:
-                println("Set Score Success");
-                break;
+            // case Server_Score_Success:
+            //     println("Set Score Success");
+            //     break;
             default :
                 println("--------------------\nUnhandled Operation: "+rcv_event.toString()+"  "+millis());
                 for(Entry<Byte,Object> entry:params.entrySet()){

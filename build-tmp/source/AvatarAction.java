@@ -1,0 +1,1 @@
+enum AvatarAction {BORN,WALK,PAUSE,TALK,BRIDGE,LEAVE,DEAD};

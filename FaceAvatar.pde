@@ -39,6 +39,8 @@ class FaceAvatar{
 		pg.imageMode(CENTER);
 		pg.pushMatrix();
 		pg.translate(mmotion.pos.x,mmotion.pos.y);
+		pg.scale(mmotion.depth_scale);
+
 
 		if(mmotion.istage==AvatarAction.BORN){
 
@@ -120,6 +122,10 @@ class FaceAvatar{
 			}
 
 			//pg.scale(mmotion.mscale);			
+
+		
+
+
 			drawAvatar(pg,face_image);
 			if(char_img!=null) pg.image(char_img,0,0);
 			//pg.text(user_name,0,0);
@@ -130,6 +136,21 @@ class FaceAvatar{
 
 		pg.popMatrix();
 		pg.popStyle();
+
+		if(mmotion.is_giraffe){
+			pg.pushMatrix();
+			float t=mmotion.action_delay;				
+			if(t<GIRAFFE_SPAN/2) pg.translate(constrain(mmotion.giraffe_dest*sin(t/GIRAFFE_SPAN*PI)-343-5,-343,0),mmotion.pos.y-50);
+			else pg.translate(constrain(mmotion.pos.x-343,-343,0)-5,constrain(mmotion.pos.y-50,50,250));
+			pg.scale(mmotion.depth_scale);
+			
+			pg.image(img_giraffe,0,0);
+			
+			pg.popMatrix();
+		}
+
+		if(DRAW_DEBUG) mmotion.drawDebugRegion(pg);
+
 	}
 	void drawAvatar(PGraphics pg,PImage face_image){
 		if(face_image!=null){
@@ -186,6 +207,9 @@ class FaceAvatar{
 	}
 	Float getDepth(){
 		return new Float(mmotion.pos.y);
+	}
+	Float getPosX(){
+		return mmotion.pos.x;
 	}
 	void goOut(){
 		mmotion.startGoOut();

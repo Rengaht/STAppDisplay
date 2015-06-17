@@ -1,14 +1,16 @@
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,160,1024,400};
-	final int[] Center_Screen_Rect={160,0,2016,160};//{1024,0,2016,160};
-	final int[] Right_Screen_Rect={1224,160,1024,400};//{3040,0,1024,400};
+	final int[] Left_Screen_Rect={0,176,1024,384};
+	final int[] Center_Screen_Rect={0,0,2032,176};
+	final int[] Right_Screen_Rect={2032,0,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
 	GameState game_state;
 
 	boolean wait_mode=true;
+	Thread thread_load=null;
+	boolean finish_load=false;
 
 	GameScene(){
 		pg=createGraphics(width,height,P3D);
@@ -16,23 +18,55 @@ class GameScene{
 		right_pg=createGraphics(Right_Screen_Rect[2],Right_Screen_Rect[3],P3D);
 		center_pg=createGraphics(Center_Screen_Rect[2],Center_Screen_Rect[3],P3D);
 		
-		loadFiles();
+		finish_load=false;
+		
+		Load();
 
 	}
+	void Load(){
+		println("Load Game.....");
+
+		if(!finish_load && thread_load==null){
+			thread_load=new Thread(new Runnable(){
+			    public void run(){
+			    	println(".... Start Loading .....");
+			        loadFiles();
+			        println(".... End Loading .....");
+			        finish_load=true;
+			        // Init();
+			    }
+			});  
+			thread_load.start();
+		}
+	}
 	void Init(){
+		
+		thread_load=null;
+
+		println("Init Game.....");
 		game_state=GameState.WAIT;
 		show_game_over=false;
 		wait_mode=true;
 	}
+
+	void SUpdate(){
+	
+		if(finish_load) Update();	
+
+	}
 	void Update(){}
 	void Draw(){
 
+		
+
 		left_pg.beginDraw();
 			DrawLeftScreen(left_pg);
+			if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
 		left_pg.endDraw();
 
 		right_pg.beginDraw();
 			DrawRightScreen(right_pg);
+			if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
 		right_pg.endDraw();
 		
 		center_pg.beginDraw();
@@ -58,16 +92,35 @@ class GameScene{
 	}
 	void StartGame(){
 		game_state=GameState.PLAY;
-		
+		show_game_over=false;
 	}
 	void EndGame(){
 		game_state=GameState.END;
 		show_game_over=true;
 	}
 
+	void UnLoad(){
+		
+		println("UnLoad Game.....");
+
+		if(finish_load) unloadFiles();
+		System.gc();
+		finish_load=false;
+
+	}
 	void DrawLeftScreen(PGraphics sub_pg){}
 	void DrawRightScreen(PGraphics sub_pg){}
 	void DrawCenterScreen(PGraphics sub_pg){}
 	void loadFiles(){}
+	void unloadFiles(){}
 
+	void drawWaitTitle(PGraphics pg,boolean is_android){
+		pg.pushStyle();
+		pg.tint(255,255*sin((float)frameCount/50));
+			pg.image(img_qrcode_title,0,0);
+			pg.tint(255,abs(sin((float)frameCount/50))*105+150);
+			if(is_android) pg.image(img_qrcode_android,383,105);
+			else pg.image(img_qrcode_ios,383,105);
+		pg.popStyle();
+	}
 }

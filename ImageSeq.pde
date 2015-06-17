@@ -27,6 +27,7 @@ class ImageSeq{
 		if(icur_frame<mframe) icur_frame+=frame_vel;
 		if(icur_frame>=mframe){
 			if(looped) icur_frame=0;
+			else isplaying=false;
 		}
 	}
 
