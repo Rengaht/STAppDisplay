@@ -1,5 +1,5 @@
 
-final float ROAD_MOV_SPEED=5;
+final float ROAD_MOV_SPEED=1;
 final float CAR_BASE_VEL=1;
 final float CAR_DEST_DIST=60;
 
@@ -89,7 +89,8 @@ class EnergyCar{
 		if(DRAW_DEBUG){
 			pg.textSize(16);
 			pg.fill(255,0,0);
-			pg.text(dest_vel,10,20);			
+			pg.text(dest_vel,10,20);
+			pg.text(run_distance,10,40);			
 		}
 		float _pos=getCurPosition();
 		pg.translate(map(_pos,-1,1,ROAD_LINE[0],ROAD_LINE[1]),300,map(ani_end_transform.GetPortion(),0,1,0,-800));
@@ -107,7 +108,10 @@ class EnergyCar{
 			// }
 			if(ani_end_transform.GetPortion()<1) pg.image(pg_img,0,0);
 
-    		if(DRAW_DEBUG) pg.text(ani_car_transform.GetPortion(),-20,-50);
+    		if(DRAW_DEBUG){
+    			pg.text(ani_car_transform.GetPortion(),-20,-50);	
+
+    		} 
 		pg.popMatrix();
 
 
@@ -237,7 +241,7 @@ class EnergyCar{
 	}
 	void updatePosition(int delta_position){
 		
-		float _dest=constrain(dest_pos+delta_position,-1,1);
+		float _dest=delta_position;
 		if(_dest==dest_pos) return;
 		
 		cur_pos=lerp(cur_pos,dest_pos,ani_pos.GetPortion());
@@ -260,11 +264,13 @@ class EnergyCar{
 		ani_icontext.Restart();
 
 
-		if(iset_car<4) dest_vel=2*ROAD_MOV_SPEED;
+		if(iset_car<4) dest_vel=2.3*ROAD_MOV_SPEED;
 		else if(iset_car<ITRANSCAR) dest_vel=1.5*ROAD_MOV_SPEED;
 		else{
-			dest_vel=1*ROAD_MOV_SPEED;
+			// dest_vel=.6*ROAD_MOV_SPEED;
+			dest_vel=cur_vel-0.4*ROAD_MOV_SPEED;
 			ani_car_transform.Restart();
+			ani_icon_timer.Restart();	
 			is_bump_transform=true;
 			seq_effect.pause();
 			return;
@@ -353,7 +359,7 @@ class EnergyCar{
 		return ani_end_transform.GetPortion()==1;
 	}
 	int getScore(){
-		return (int)(run_distance/CAR_DEST_DIST*100);
+		return (int)(run_distance);
 	}
 	int getCurFrame(){
 		//println(seq_car.icur_frame);

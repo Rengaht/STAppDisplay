@@ -29,16 +29,22 @@ class BGameScene extends GameScene{
 	PImage[] arr_mapcar_img;
 	PImage[] arr_map_img;
 	PImage[] arr_img_fighting;
+	PImage[] arr_img_winlose;
 
 	IconLine[] arr_icon_line;
 
 	Timer timer_sleep;
+
+	CountDown mcount_down;
+
 
 	BGameScene(){
 		super();
 		arr_car=new EnergyCar[2];
 		arr_car[0]=new EnergyCar(512,200,0);
 		arr_car[1]=new EnergyCar(512,200,1);
+
+		mcount_down=new CountDown(3);
 	}
 
 	@Override
@@ -113,8 +119,11 @@ class BGameScene extends GameScene{
 		arr_img_fighting[0]=loadImage(DataFolder+"Fighting_yellow.png");
 		arr_img_fighting[1]=loadImage(DataFolder+"Fighting_red.png");
 
-		
-		
+	
+		arr_img_winlose=new PImage[2];
+		arr_img_winlose[0]=loadImage(DataFolder+"sign_win.png");
+		arr_img_winlose[1]=loadImage(DataFolder+"sign_lose.png");
+
 
 		arr_icon_line=new IconLine[6];
 		arr_icon_line[0]=new IconLine((int)random(ITRANSCAR),-1);
@@ -143,6 +152,8 @@ class BGameScene extends GameScene{
 		// CAR_DEST_DIST=mov_road_left.duration();
 
 		for(int i=0;i<2;++i) arr_car[i].reset();
+
+		
 	}
 
 
@@ -173,8 +184,15 @@ class BGameScene extends GameScene{
 			}
 			mov_road_loop.read();
 
-		}else if(game_state==GameState.PLAY){
+		}else if(game_state==GameState.COUNT_DOWN){
 
+			mcount_down.update();
+			if(mcount_down.isFinished()){
+				if(!OFFLINE) photon_client.sendStartRunEvent();	
+				mcount_down.reset();
+			}
+
+		}else if(game_state==GameState.PLAY){
 			if(mcur_player==1){
 				if(random(50)<1) arr_car[1].updatePosition((int)random(-2,2));
 			}
@@ -223,13 +241,14 @@ class BGameScene extends GameScene{
 				 if(car.arriveGoal()){
 				 	one_arrive=true;
 				 	iwinner=i;
+				 	println("Car "+i+" ARRIVE!!");
 				 	break;
 				 }
 			}
 			if(one_arrive){
-				 println("ARRIVE!!");
+				 
 				 int[] scores=GetScores();
-				 if(!OFFLINE) photon_client.sendScoreEvent(scores[0],scores[1]);
+				 // if(!OFFLINE) photon_client.sendScoreEvent(scores[0],scores[1]);
 				 endRound();
 			}
 		}else{
@@ -242,7 +261,7 @@ class BGameScene extends GameScene{
 		mov_road_left.read();
 		mov_road_right.read();
 
-	
+		
 	}
 	
 	
@@ -257,18 +276,29 @@ class BGameScene extends GameScene{
 		if(game_state==GameState.WAIT) sub_pg.image(mov_road_loop,0,0);	
 		else sub_pg.image(mov_road_left,0,0);
 		
+		
+
+		switch(game_state){
+			case COUNT_DOWN:
+				mcount_down.draw(sub_pg,512,192);
+				break;
+			case END:
+				if(arr_car[0].getScore()>=arr_car[1].getScore()) sub_pg.image(arr_img_winlose[0],89,24.5);
+				else sub_pg.image(arr_img_winlose[1],89,24.5);
+				break;		
+
+			case PLAY:
+
+				for(int i=0;i<3;++i){
+					int _index=arr_icon_line[i].icon_index;
+					PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
+					
+					arr_icon_line[i].draw(sub_pg,_icon);	
+				} 
+				break;
+		}
 		arr_car[0].draw(sub_pg);
-
-
-		if(game_state!=GameState.PLAY) return;
-
-		for(int i=0;i<3;++i){
-			int _index=arr_icon_line[i].icon_index;
-			PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
-			
-			arr_icon_line[i].draw(sub_pg,_icon);	
-		} 
-			
+		
 	}
 
 	@Override
@@ -283,27 +313,31 @@ class BGameScene extends GameScene{
 			arr_car[1].draw(sub_pg);			
 
 		}else{
+
 			// if(mcur_player==2){
 				sub_pg.image(mov_road_right,0,0);
+				
+				
+				switch(game_state){
+					case COUNT_DOWN:
+						mcount_down.draw(sub_pg,512,192);
+						break;
+					case END:
+						if(arr_car[1].getScore()>=arr_car[0].getScore()) sub_pg.image(arr_img_winlose[0],89,24.5);
+						else sub_pg.image(arr_img_winlose[1],89,24.5);
+						break;
+
+					case PLAY:
+						for(int i=3;i<6;++i){
+							int _index=arr_icon_line[i].icon_index;
+							PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
+							
+							arr_icon_line[i].draw(sub_pg,_icon);		
+						}	
+				}
 				arr_car[1].draw(sub_pg);
-		
-				if(game_state!=GameState.PLAY) return;
-
-
-				for(int i=3;i<6;++i){
-					int _index=arr_icon_line[i].icon_index;
-					PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
-					
-					arr_icon_line[i].draw(sub_pg,_icon);		
-				}	
-			// }else{
-			// 	DrawLeftScreen(sub_pg);
-			// }
 		} 
 		
-
-		
-		 
 		
 	}
 
@@ -312,7 +346,6 @@ class BGameScene extends GameScene{
 		sub_pg.background(255);
 		sub_pg.image(mov_back_center,0,0);
 		
-		if(game_state==GameState.WAIT){
 			
 			sub_pg.pushMatrix();
 			sub_pg.translate(80,88);
@@ -330,7 +363,10 @@ class BGameScene extends GameScene{
 			sub_pg.popMatrix();
 
 			sub_pg.pushMatrix();
+				sub_pg.pushStyle();
+				sub_pg.tint(255,255*abs(sin((float)frameCount/8)),255);
 				sub_pg.image(arr_img_fighting[0],1016-336,88-35);
+				sub_pg.popStyle();
 			sub_pg.popMatrix();
 			
 			sub_pg.pushMatrix();
@@ -348,8 +384,8 @@ class BGameScene extends GameScene{
 				sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
 			sub_pg.popMatrix();				
 
-			return;
-		}
+		if(game_state==GameState.WAIT) return;
+		
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(80,88);
@@ -366,8 +402,8 @@ class BGameScene extends GameScene{
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(160,50);
-			sub_pg.image(arr_map_img[0],0,0);
-				// float left_pos=arr_car[0].run_distance;
+			// sub_pg.image(arr_map_img[0],0,0);
+			// 	// float left_pos=arr_car[0].run_distance;
 	
 			float left_pos=arr_car[0].run_distance/CAR_DEST_DIST;
 			sub_pg.pushStyle();
@@ -378,9 +414,6 @@ class BGameScene extends GameScene{
 	
 		sub_pg.popMatrix();
 
-		sub_pg.pushMatrix();
-			sub_pg.image(arr_img_fighting[0],1016-336,88-35);
-		sub_pg.popMatrix();
 		
 		sub_pg.pushMatrix();
 		sub_pg.translate(1952,88);
@@ -401,7 +434,7 @@ class BGameScene extends GameScene{
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(2032-160,50);
-			sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
+			// sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
 
 			// float right_pos=arr_car[1].run_distance;
 			float right_pos=0;
@@ -434,6 +467,10 @@ class BGameScene extends GameScene{
 				if(mcur_player==2) arr_car[1].user_id=(String)params.get((byte)200);
 				StartGame();
 				break;
+			case Server_Start_Run:
+				startRoad();
+				break;
+
 			// case Server_User_Color:
 			// 	int car_color=(Integer)params.get((byte)1);
 			// 	if(car_color>=0 && car_color<=1) arr_car[car_color].user_id=(String)params.get((byte)100);
@@ -472,27 +509,49 @@ class BGameScene extends GameScene{
 			timer_sleep=null;
 			// this.Init();
 		}
-
-		
+	
 		super.StartGame();
+		game_state=GameState.COUNT_DOWN;
 		iwinner=-1;
 		
-		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
-		for(IconLine icon:arr_icon_line) icon.restart();
-
+		for(int i=0;i<2;++i) arr_car[i].reset();
+		// for(IconLine icon:arr_icon_line) icon.restart();
+		for(IconLine icon:arr_icon_line) icon.pause();
 	
 		mov_road_right.play();
 		mov_road_right.jump(0);
-		
+		mov_road_right.pause();
+
 		mov_road_left.play();		
 		mov_road_left.jump(0);
+		mov_road_left.pause();
+
+
+		mcount_down.start();
+
 
 		// CAR_DEST_DIST=mov_road_left.duration();
 		println("CAR_DEST_DIST= "+CAR_DEST_DIST);
 
 		mov_road_loop.stop();
-	}
 
+		if(OFFLINE) startRoad();
+	}
+	void startRoad(){
+
+		game_state=GameState.PLAY;
+
+		
+
+		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
+		for(IconLine icon:arr_icon_line) icon.restart();
+
+		
+		mov_road_right.play();
+
+		mov_road_left.play();		
+
+	}
 	void endRound(){
 
 		println("----- End Round -----");
@@ -503,7 +562,14 @@ class BGameScene extends GameScene{
 		for(EnergyCar car:arr_car) car.stopRun();
 		for(IconLine icon:arr_icon_line) icon.pause();
 
-		if(!OFFLINE) photon_client.sendScoreEvent(arr_car[0].getScore(),arr_car[1].getScore());
+		if(!OFFLINE){
+			int send_icar1=arr_car[0].cur_icar;
+			if(send_icar1==-1) send_icar1=8;
+			int send_icar2=arr_car[1].cur_icar;
+			if(send_icar2==-1) send_icar1=9;
+			
+			photon_client.sendScoreEvent(arr_car[0].getScore(),arr_car[1].getScore(),send_icar1,send_icar2);	
+		} 
 
 		super.EndGame();
 

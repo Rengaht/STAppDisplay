@@ -492,6 +492,7 @@ class CGameScene extends GameScene{
 		switch(event_code){
 			case Server_Set_Face:
 				setFace(params);
+				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
 			case Server_LGG:
 				println("------The End------");

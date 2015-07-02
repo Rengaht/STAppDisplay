@@ -1,2 +1,2 @@
-enum GameState {WAIT,PLAY,END};
+enum GameState {WAIT,PLAY,END,COUNT_DOWN};
 	

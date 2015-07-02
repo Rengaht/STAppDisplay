@@ -3,7 +3,7 @@
 class IconLine{
 	
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=60;
+	final float ICON_DELAY=120;
 	
 	float pos_x;
 
@@ -54,7 +54,7 @@ class IconLine{
 		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
 			ani_icon.setDelay(ICON_DELAY*random(1,3));
 			ani_icon.Restart();
-			icon_index=(int)random(ITRANSCAR+2);
+			icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
 			ani_explode.Reset();
 			// ani_text.Reset();
 			is_explode=false;

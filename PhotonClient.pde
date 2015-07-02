@@ -4,7 +4,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 // final String SERVER_IP="210.65.11.248:5055";
-final String SERVER_IP="192.168.2.226:5055";
+final String SERVER_IP="192.168.2.227:5055";
+final String SERVER_NAME="STGameA";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
@@ -54,7 +55,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	}
 	public boolean connect(){
 		this.loadBalancingPeer=new LoadBalancingPeer(this,ConnectionProtocol.Udp);
-		if(this.loadBalancingPeer.connect(SERVER_IP, "STGameB")){
+		if(this.loadBalancingPeer.connect(SERVER_IP, SERVER_NAME)){
 			return true;
 		}
 		return false;
@@ -77,6 +78,27 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LScore.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
     }
+    public void sendScoreEvent(int score1,int score2,int icar1,int icar2){
+
+
+        println("--------- Send Score : "+score1+" / "+score2+" ----------");
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
+        eventContent.put((byte)1, score1);              
+        eventContent.put((byte)2, score2);              
+        eventContent.put((byte)3, icar1);
+        eventContent.put((byte)4, icar2);
+
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LScore.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    public void sendStartRunEvent(){
+
+
+        println("--------- Send Start Run -----------");
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
+        
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    
     @Override
     public void onStatusChanged(StatusCode statusCode){
         super.onStatusChanged(statusCode);

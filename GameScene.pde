@@ -1,8 +1,8 @@
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,176,1024,384};
-	final int[] Center_Screen_Rect={0,0,2032,176};
-	final int[] Right_Screen_Rect={2032,0,1024,384};
+	final int[] Left_Screen_Rect={0,0,1024,384};
+	final int[] Center_Screen_Rect={1024,0,2032,176};
+	final int[] Right_Screen_Rect={3056,0,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -26,18 +26,18 @@ class GameScene{
 	void Load(){
 		println("Load Game.....");
 
-		if(!finish_load && thread_load==null){
-			thread_load=new Thread(new Runnable(){
-			    public void run(){
-			    	println(".... Start Loading .....");
+		// if(!finish_load && thread_load==null){
+		// 	thread_load=new Thread(new Runnable(){
+		// 	    public void run(){
+		// 	    	println(".... Start Loading .....");
 			        loadFiles();
 			        println(".... End Loading .....");
 			        finish_load=true;
 			        // Init();
-			    }
-			});  
-			thread_load.start();
-		}
+		// 	    }
+		// 	});  
+		// 	thread_load.start();
+		// }
 	}
 	void Init(){
 		
@@ -61,12 +61,12 @@ class GameScene{
 
 		left_pg.beginDraw();
 			DrawLeftScreen(left_pg);
-			if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
+			// if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
 		left_pg.endDraw();
 
 		right_pg.beginDraw();
 			DrawRightScreen(right_pg);
-			if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
+			// if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
 		right_pg.endDraw();
 		
 		center_pg.beginDraw();
@@ -118,7 +118,7 @@ class GameScene{
 		pg.pushStyle();
 		pg.tint(255,255*sin((float)frameCount/50));
 			pg.image(img_qrcode_title,0,0);
-			pg.tint(255,abs(sin((float)frameCount/50))*105+150);
+			// pg.tint(255,abs(sin((float)frameCount/50))*105+150);
 			if(is_android) pg.image(img_qrcode_android,383,105);
 			else pg.image(img_qrcode_ios,383,105);
 		pg.popStyle();

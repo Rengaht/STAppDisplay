@@ -11,6 +11,7 @@ import java.util.Enumeration;
 import java.util.Collections; 
 import java.util.Iterator; 
 import java.lang.reflect.Field; 
+import java.util.Collection; 
 import processing.video.*; 
 import java.util.UUID; 
 import org.apache.commons.codec.binary.Base64; 
@@ -183,7 +184,7 @@ public class STAppDisplay extends PApplet {
 
 
 boolean DRAW_DEBUG=true;
-boolean OFFLINE=false;
+boolean OFFLINE=true;
 final int MGAME=3;
 final boolean GIRRAFE=false;
 
@@ -197,15 +198,17 @@ int igame_scene=-1;
 GameScene[] agame_scene;
 boolean show_game_over=false;
 
-PFont font;
+PFont font,name_font;
 PApplet gapplet;
 
 PImage img_qrcode_title,img_qrcode_android,img_qrcode_ios;
 
+PShader shd_rmv_bg;
+
 
 public void setup(){
 
-	size(3056,560,P3D);
+	size(4080,560,P3D);
 	gapplet=this;
 
 	
@@ -227,18 +230,25 @@ public void setup(){
 
 	agame_scene=new GameScene[MGAME];
 	agame_scene[0]=new AGameScene();
-	agame_scene[1]=new BGameScene();
-	agame_scene[2]=new CGameScene();
+	// agame_scene[1]=new BGameScene();
+	// agame_scene[2]=new CGameScene();
 
 	// for(GameScene game_scene:agame_scene) game_scene.Init();
 
 	// println(agame_scene[6]);
 	font=loadFont("GameOver_Font.vlw");
 	textFont(font, 40);
+	
+	name_font=loadFont("MicrosoftMHei-Bold-18.vlw");
+	// textFont(name_font);
+
+	shd_rmv_bg=loadShader("Rmv_Black.glsl");
+	
+
 
 	background(0);
 	
-
+	drawIlandText("");
 }
 
 
@@ -251,7 +261,7 @@ public void draw(){
 	
 	boolean all_loaded=true;
 	for(int i=0;i<MGAME;++i){
-		if(!agame_scene[i].finish_load) all_loaded=false;
+		if(agame_scene[i]!=null && !agame_scene[i].finish_load) all_loaded=false;
 	}
 	if(!all_loaded){
 		background(0);
@@ -289,6 +299,9 @@ public void draw(){
 			text("ONLINE",1064,500);
 		}
 	}
+
+
+	// text("\u5566\u5566\u5566\u5566\u8521\u4f73\u793d",20,20);
 }
 
 
@@ -300,9 +313,13 @@ public void setGame(int game_index){
 	
 	// if(igame_scene>-1 && game_index!=igame_scene) agame_scene[igame_scene].UnLoad();
 
-	igame_scene=game_index;
 	
-	if(igame_scene>-1) agame_scene[igame_scene].Init();
+	
+	if(game_index>-1)
+	 if(agame_scene[game_index]!=null){
+	 	agame_scene[game_index].Init();
+	 	igame_scene=game_index;
+	 } 
 
 }
 
@@ -315,8 +332,8 @@ public void keyPressed(){
 		case 'g':
 			show_game_over=!show_game_over;
 			break;
-		case 'q':
-			if(igame_scene==0) ((AGameScene)agame_scene[igame_scene]).addNewHouse("test_id","test_name",1);
+		case 'h':
+			// if(igame_scene==0) ((AGameScene)agame_scene[igame_scene]).addNewHouse("test_id"+frameCount,(int)random(2));
 			break;
 		case 'd':
 			//DRAW_DOOR=!DRAW_DOOR;
@@ -353,106 +370,546 @@ public void keyPressed(){
 
 		case 's':
 			if(igame_scene==1) ((BGameScene)agame_scene[1]).StartGame();
+			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerBuilding();
 			break;
-
+		case 't':
+			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerTurb();
+			break;
 					
 	}
 
 }
 
 
+public String drawIlandText(String build_name){
+	
+	if(build_name==null) return null;
 
-class RayLine{
-	float x,y,len;
-	float z;
-	float vel;
-	RayLine(float x_,float y_,float len_){
-		x=x_; y=y_; len=len_;
-		z=-width/2; vel=random(50)+20;
+	// println("Draw Iland Text "+build_name);
+	PGraphics pg_text=createGraphics(200,52,P3D);
+	pg_text.beginDraw();
+		pg_text.translate(pg_text.width/2,pg_text.height/2);
+		pg_text.scale(1,2);
+		pg_text.background(0,0);
+		pg_text.textFont(name_font);
+		pg_text.textSize(18);
+		pg_text.textAlign(CENTER,CENTER);
+		pg_text.fill(255);
+
+		pg_text.text(build_name,0,0);
+		for(int i=0;i<2;++i) pg_text.filter(DILATE);
+
+		pg_text.fill(65,103,177);
+		pg_text.text(build_name,0,0);
+
+		// pg_text.shader(shd_rmv_bg);
+		// pg_text.loadPixels();
+		// for(int i=0;i<pg_text.width;++i)
+		// 	for(int j=0;j<pg_text.height;++j){
+		// 		color tcolor=pg_text.get(i,j);
+		// 		if(red(tcolor)<65 || green(tcolor)<103 || blue(tcolor)<177) pg_text.set(i,j,color(0,0));
+		// 		else pg_text.set(i,j,color(tcolor,255));
+		// 	}
+		// pg_text.updatePixels();
+	pg_text.endDraw();
+
+
+	String file_name="tag_name_"+nf(frameCount,5)+".png";
+	pg_text.save(file_name);
+	// saveStrings("tag_str_"+nf(frameCount,5),new String[]{build_name});
+	return file_name;
+
+}
+class ACloud{
+	
+	float _posx,_posy,_pscale;
+	PVector move_amp,move_vel,move_phi;
+
+	int icloud;
+
+	boolean is_turbing;
+	FrameAnimation ani_turb;
+	PVector pos_turb_src,pos_turb_dest,amp_turb;
+
+	ACloud(float set_posx,float set_posy){
+		
+		_posx=set_posx;
+		_posy=set_posy;
+
+		_pscale=random(.2f,1);	
+		icloud=(int)random(2);
+
+		move_amp=new PVector(25*random(2),5*random(1));
+		move_vel=new PVector(random(70,120),random(120,180));
+	
+		move_phi=new PVector(random(TWO_PI),random(TWO_PI));
+
+		is_turbing=false;
+		ani_turb=new FrameAnimation(320);
+
 	}
-	public void draw(PGraphics pg){
-		pg.stroke(255,120);
-		pg.line(x,y,z,x,y,z+len);
-		update();
+	public void draw(PGraphics pg,PImage img_cloud){
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+
+		pg.pushMatrix();
+		if(is_turbing){
+			float virb_t=ani_turb.GetPortion();
+			pg.translate(_posx+move_amp.x*60*sin(PI*virb_t*amp_turb.x),_posy+move_amp.y*60*sin(PI*virb_t*amp_turb.y));
+
+		}else{
+			pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
+		}
+		pg.scale(_pscale);
+			pg.image(img_cloud,0,0);
+		pg.popMatrix();
+
+		pg.popStyle();
 	}
 	public void update(){
-		z+=vel;
-		if(z>width*2) z=-width/2;
+		if(is_turbing){
+			ani_turb.Update();
+			if(!ani_turb.ani_start) is_turbing=false;
+		}
 	}
+	public void triggerTurb(){
+		if(is_turbing) return;
+
+		amp_turb=new PVector((int)random(2,6)*(random(2)<1?1:-1),(int)random(2,6)*(random(2)<1?1:-1));
+		ani_turb.Restart();
+		is_turbing=true;
+	}
+
 }
 
+class ASpaceShip{
+
+
+	float _posx,_posy,_pscale;
+	PVector move_amp,move_vel,move_phi;
+
+	ASpaceShip(float set_posx,float set_posy){
+		
+		_posx=set_posx;
+		_posy=set_posy;
+
+		_pscale=random(.75f,1);	
+	
+		move_amp=new PVector(random(900,1500),random(50));
+		move_vel=new PVector(random(420,650),random(40,80));
+	
+		move_phi=new PVector(random(TWO_PI),random(TWO_PI));
+
+	}
+	public void draw(PGraphics pg,PImage img_ship){
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		pg.textureMode(NORMAL);
+		pg.noStroke();
+
+		pg.pushMatrix();
+		pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
+		pg.scale(_pscale);
+			// pg.image(img_ship,0,0);
+			float tmp_phi=((float)frameCount/move_vel.x+move_phi.x);
+			boolean dir=!(tmp_phi%TWO_PI<HALF_PI||tmp_phi%TWO_PI>HALF_PI*3);
+			
+
+			pg.beginShape();
+			pg.texture(img_ship);
+				pg.vertex(-104,-33,dir?0:1,0);
+				pg.vertex(104,-33,dir?1:0,0);
+				pg.vertex(104,33,dir?1:0,1);
+				pg.vertex(-104,33,dir?0:1,1);
+			pg.endShape();
+		pg.popMatrix();
+
+		pg.popStyle();
+
+
+
+	}
+
+
+}
+
+
+class AStar{
+
+	float _posx,_posy,_pscale;
+	PVector move_amp;//
+	float move_vel,move_phi;
+	float move_delay;
+	AStar(float set_posx,float set_posy){
+		
+		_posx=set_posx;
+		_posy=set_posy;
+
+		_pscale=random(.75f,1);	
+		
+		float k=5;//random(5,20);
+		move_amp=new PVector(-150*k,112*k);
+		move_vel=random(100,200);
+		
+		move_phi=random(move_vel);
+		
+		move_delay=random(move_vel,move_vel*5);
+	}
+	public void draw(PGraphics pg,PImage img_star){
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		pg.textureMode(NORMAL);
+		pg.noStroke();
+
+		pg.pushMatrix();
+
+		float _pos=constrain(((frameCount+move_phi)%(move_vel+move_delay))/move_vel,0,1);
+		pg.translate(_posx,_posy);
+		// pg.rotate(move_phi.y);
+		pg.translate(move_amp.x*_pos,move_amp.y*_pos);
+		
+		pg.scale(_pscale);			
+			pg.image(img_star,0,0);
+		pg.popMatrix();
+
+		pg.popStyle();
+
+
+
+	}
+
+
+}
+
+
+
 class AGameScene extends GameScene{
+
+	final String DataFolder="GAME_A/";
+	final int MCLOUD=10;
+	final int MISLAND=5;
+	final int IBUILD=5;
+	final int MBUILD_PART=4;
+	final int IBUILD_PART=4;
+
 	int mhouse=9;
-	HashMap<String,House> left_house_map;
-	HashMap<String,House> right_house_map;
+	HashMap<String,AIsland> map_left_island;
+	HashMap<String,AIsland> map_right_island;
 
 	int mray=100;
-	RayLine[] arayline;
+	
+	PImage[] arr_img_back;
+	PImage[] arr_img_cloud;
+	PImage[] arr_img_people;
+	PImage img_island,img_spaceship,img_score;
+	PImage[] arr_img_red_num,arr_img_blue_num;
+	ArrayList<ArrayList<ArrayList<PImage>>> arr_img_build_part;
+	PImage[] arr_img_winlose;
+	
+	PImage img_star;
+	ArrayList<AStar> arr_star;
+
+
+	ArrayList<ACloud> arr_left_acloud,arr_right_acloud;
+	ASpaceShip[] arr_space_ship;
+
+
+	int[] arr_acc_score;
+
+	public @Override
+	void loadFiles(){
+		arr_img_build_part=new ArrayList<ArrayList<ArrayList<PImage>>>();
+		for(int i=0;i<IBUILD;++i){
+			ArrayList<ArrayList<PImage>> arr_build=new ArrayList<ArrayList<PImage>>();
+			
+			String mpart=DataFolder+"Building/"+PApplet.parseChar(65+i)+"/"+PApplet.parseChar(65+i)+"-main.png";
+			println(mpart);
+			PImage img_main=loadImage(mpart);
+			ArrayList<PImage> arr_main=new ArrayList<PImage>();
+			arr_main.add(img_main);
+			arr_build.add(arr_main);
+			
+			for(int x=0;x<MBUILD_PART;++x){
+				for(int y=0;y<IBUILD_PART;++y){
+					ArrayList<PImage> arr_ani=new ArrayList<PImage>();
+					
+					if(x==1 ||(x==2 && y>1)){
+						for(int a=0;a<60;++a){
+							String fpart=getBuildPartFileName(i,x,y,a);
+							if(fpart!=null){
+								println(fpart);
+								PImage img_part=loadImage(fpart);
+								arr_ani.add(img_part);	
+							}
+						}
+					}else{
+						String fpart=getBuildPartFileName(i,x,y,0);
+						if(fpart!=null){
+							println(fpart);
+							PImage img_part=loadImage(fpart);
+							arr_ani.add(img_part);
+						}
+					}
+					arr_build.add(arr_ani);
+				}
+			}
+			arr_img_build_part.add(arr_build);
+		}
+
+		arr_img_back=new PImage[3];
+		arr_img_back[0]=loadImage(DataFolder+"BG/bg_left.png");
+		arr_img_back[1]=loadImage(DataFolder+"BG/bg_right.png");
+		arr_img_back[2]=loadImage(DataFolder+"BG/bg_center.png");
+			
+		arr_img_cloud=new PImage[2];
+		arr_img_cloud[0]=loadImage(DataFolder+"BG/cloud01.png");
+		arr_img_cloud[1]=loadImage(DataFolder+"BG/cloud02.png");
+
+		arr_left_acloud=new ArrayList<ACloud>();
+		arr_right_acloud=new ArrayList<ACloud>();
+		for(int i=0;i<MISLAND;++i){
+			int mcloud=(int)random(2,4);
+			for(int x=0;x<mcloud;++x){
+				arr_left_acloud.add(new ACloud((i+.5f)*204.8f+random(-90,90),((i+1)%2*110+220+random(-30,20))));
+			}
+			// tmpi=(int)random(MISLAND);
+			mcloud=(int)random(2,4);
+			for(int x=0;x<mcloud;++x){
+				arr_right_acloud.add(new ACloud((i+.5f)*204.8f+random(-90,90),((i+1)%2*110+220+random(-30,20))));
+			}
+		}
 
 
 
+		img_island=loadImage(DataFolder+"BG/land1.png");
+		img_spaceship=loadImage(DataFolder+"BG/airship.png");
+
+		map_left_island=new HashMap<String,AIsland>();
+		map_right_island=new HashMap<String,AIsland>();
+
+
+
+		arr_img_people=new PImage[5];
+		for(int i=0;i<5;++i){
+			arr_img_people[i]=loadImage(DataFolder+"PEOPLE/people"+nf(i+1,1)+".png");
+		}
+
+		arr_space_ship=new ASpaceShip[2];
+		for(int i=0;i<2;++i) arr_space_ship[i]=new ASpaceShip(i==0?Left_Screen_X:Right_Screen_X,random(45,65));
+
+		arr_img_red_num=new PImage[10];
+		arr_img_blue_num=new PImage[10];
+		for(int i=0;i<10;++i){
+			arr_img_red_num[i]=loadImage(DataFolder+"BG/number/number_red_"+i+".png");
+			arr_img_blue_num[i]=loadImage(DataFolder+"BG/number/number_blue_"+i+".png");
+		}
+		img_score=loadImage(DataFolder+"BG/score.png");
+
+
+		arr_img_winlose=new PImage[2];
+		arr_img_winlose[0]=loadImage(DataFolder+"BG/win.png");
+		arr_img_winlose[1]=loadImage(DataFolder+"BG/lose.png");
+
+
+		img_star=loadImage(DataFolder+"BG/star.png");
+		arr_star=new ArrayList<AStar>();
+		int mstar=8;
+		for(int i=0;i<mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i*random(.7f,1.3f),-20));
+
+	}
+	private String getBuildPartFileName(int ibuild,int icat,int ipart,int iframe){
+		
+		String fpart=null;
+
+		if(icat==1 ||(icat==2 && ipart>1)){
+			
+			fpart=DataFolder+"Building/"+PApplet.parseChar(65+ibuild)+"/"+PApplet.parseChar(65+ibuild)+"-"+PApplet.parseChar(97+icat)+"-"+(ipart+1)+"/"
+								+PApplet.parseChar(65+ibuild)+"-"+PApplet.parseChar(97+icat)+"-"+nf(ipart+1,1)+nf(iframe,5)+".png";
+		}else{
+			fpart=DataFolder+"Building/"+PApplet.parseChar(65+ibuild)+"/"+PApplet.parseChar(65+ibuild)+"-"+PApplet.parseChar(97+icat)+"-"+nf(ipart+1,1)+".png";
+		}
+		// println(fpart);
+		if(fpart==null) println("illegal building part: "+ibuild+"-"+icat+"-"+ipart+"-"+iframe);
+
+		return fpart;
+	}
 	public @Override
 	void Init(){
 		super.Init();
 		
-		right_house_map=new HashMap<String,House>();
-		left_house_map=new HashMap<String,House>();
+		map_right_island.clear();
+		map_left_island.clear();
 		
-		arayline=new RayLine[mray];	
-		for(int i=0;i<mray;++i) arayline[i]=new RayLine(random(width),random(height),random(10,width/2));
+		addDefaultHouse();
 
-		// for(int i=0;i<mhouse;++i) 
-		// 	addNewHouse(UUID.randomUUID().toString(),"name_"+i);
-		this.StartGame();
+		
+
+		arr_acc_score=new int[2];
+		for(int i=0;i<2;++i) arr_acc_score[i]=0;
 
 	}
+	public @Override void StartGame(){
+		
+		super.StartGame();
+
+		
+		for(AIsland iland:map_left_island.values()){
+			iland.gotoDie();
+		}
+		for(AIsland iland:map_right_island.values()){
+			iland.gotoDie();
+		}
+			
+	}
+
 
 	public @Override
 	void Update(){
+		
+		for(int i=0;i<2;++i) arr_acc_score[i]=0;
 
+		for(AIsland iland:map_left_island.values()){
+			iland.update();
+			arr_acc_score[0]+=iland.acc_score;
+			if(iland.img_text==null && !iland.is_default){
+				String file_name=drawIlandText(iland.build_name);
+				if(file_name!=null) iland.img_text=loadImage(file_name);
+			}
+		}
+
+		for(AIsland iland:map_right_island.values()){
+			iland.update();
+			arr_acc_score[1]+=iland.acc_score;
+			if(iland.img_text==null && !iland.is_default){
+				String file_name=drawIlandText(iland.build_name);
+				if(file_name!=null) iland.img_text=loadImage(file_name);
+			}
+		}
+		 
+		
+		for(ACloud acloud:arr_left_acloud) acloud.update();
+		for(ACloud acloud:arr_right_acloud) acloud.update();
+			
+		// for(AStart astar:arr_star) astar.update();
 	}
 
 	public @Override
 	void DrawLeftScreen(PGraphics sub_pg){
 
-		sub_pg.background(50);
+		// sub_pg.background(50);
+		sub_pg.image(arr_img_back[0],0,0);
+		// for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
 		
-		for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
+		for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+		for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+		
+		for(AIsland iland:map_left_island.values()){
+			iland.draw(sub_pg,getBuildPartImage(iland.arr_build_part));
+			// drawIlandText(sub_pg,iland._pos.x,iland._pos.y,iland.build_name);
+			// if(iland.img_text==null){
+			// 	String file_name=drawIlandText(iland.build_name);
+			// 	iland.img_text=loadImage(file_name);
+			// }
+		} 
 
+		for(ACloud acloud:arr_left_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+		
 		// for(int i=0;i<20;++i) pg.ellipse(random(width),random(height),20,20);
-		for(House house:left_house_map.values()) house.draw(sub_pg);
+		// for(House house:left_house_map.values()) house.draw(sub_pg);
 
+		if(game_state==GameState.END){
+			if(arr_acc_score[0]>=arr_acc_score[1]) sub_pg.image(arr_img_winlose[0],172,78);
+			else sub_pg.image(arr_img_winlose[1],172,78);
+		}
 	}
 
 	public @Override
 	void DrawRightScreen(PGraphics sub_pg){
-		sub_pg.background(50);
-		
-		for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
+		// sub_pg.background(50);
+		sub_pg.image(arr_img_back[1],0,0);
 
-		// for(int i=0;i<20;++i) pg.ellipse(random(width),random(height),20,20);
-		for(House house:right_house_map.values()) house.draw(sub_pg);
+		sub_pg.pushMatrix();
+		sub_pg.translate(-Right_Screen_X,0);
+			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+		sub_pg.popMatrix();
+
+		// for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
+		for(AIsland iland:map_right_island.values()) iland.draw(sub_pg,getBuildPartImage(iland.arr_build_part));
+
+		for(ACloud acloud:arr_right_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+		
+		if(game_state==GameState.END){
+			if(arr_acc_score[1]>=arr_acc_score[0]) sub_pg.image(arr_img_winlose[0],172,78);
+			else sub_pg.image(arr_img_winlose[1],172,78);
+		}
+
 	}
 
 	public @Override
 	void DrawCenterScreen(PGraphics sub_pg){
 
-		DrawLeftScreen(sub_pg);
+		sub_pg.image(arr_img_back[2],0,0);
+
+		sub_pg.pushMatrix();
+		sub_pg.translate(-Left_Screen_X,0);
+			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+		sub_pg.popMatrix();
+
+		sub_pg.pushStyle();
+		sub_pg.imageMode(CENTER);
+			sub_pg.image(img_score,sub_pg.width/2,sub_pg.height/2);
+		sub_pg.popStyle();
+
+		drawScoreNumber(sub_pg,(int)arr_acc_score[0],0);
+		drawScoreNumber(sub_pg,(int)arr_acc_score[1],1);
+
 	}
+
+	
+
 
 	// @Override
 	public void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
 		println("GameA Got Event: "+event_code.toString());
+		AIsland iland=getHouseById((String)params.get((byte)100),(Integer)params.get((byte)101));
+
 		switch(event_code){
+			case Server_Add_House:
+				if(game_state==GameState.WAIT) StartGame();
+				addNewHouse((String)params.get((byte)100),(Integer)params.get((byte)101),false);
+				break;
 			case Server_Set_Name:
-				addNewHouse((String)params.get((byte)100),(String)params.get((byte)1),(Integer)params.get((byte)101));
+				String str_name=null;
+				try{
+					// String str_orig=(String)(params.get((byte)1));
+					// byte[] bytes_name=str_orig.getBytes();
+					byte[] bytes_name=(byte[])(params.get((byte)1));
+					str_name=new String(bytes_name, "UTF-8");					
+
+				}catch(Exception e){
+					println("convert name error: "+e);
+				}
+				setHouseName(iland,str_name,(Integer)params.get((byte)2));
+				break;
+			case Server_Set_House:
+				setHousePart(iland,(Integer)params.get((byte)1),(Integer)params.get((byte)2),(Integer)params.get((byte)3),(Integer)params.get((byte)4),
+							 (Integer)params.get((byte)5));
 				break;
 			case Server_Set_Blow:
-				setBlow((String)params.get((byte)100),(Integer)params.get((byte)101));
+				setHouseTrigger(iland,0);
+				break;
+			case Server_Set_Light:
+				setHouseTrigger(iland,1);
+				break;
+			case Server_Set_Shake:			
+				setHouseTrigger(iland,2);
 				break;
 			case Server_LGG:
 				println("------The End------");
+				this.EndGame();
 				break;
 			default :
 				println("illegal event: "+event_code.toString());
@@ -464,7 +921,7 @@ class AGameScene extends GameScene{
 
 	public @Override
 	int[] GetScores(){
-		return new int[]{98,99};
+		return new int[]{(int)arr_acc_score[0],(int)arr_acc_score[1]};
 	}
 
 	// void setRotateLevel(boolean up){
@@ -475,30 +932,853 @@ class AGameScene extends GameScene{
 	// 	return "a_user_"+UUID.randomUUID();
 	// }
 
-	public void addNewHouse(String user_id,String user_name,int left_right){
-		println(" new house: "+user_id+" - "+user_name);
-		int i=-1;
-		if(left_right==1){
-			i=left_house_map.size();
-			left_house_map.put(user_id,new House(width/4*(ceil(i/3)+.5f),height/4*(i%3+.5f),user_name));
-		}else if(left_right==0){
-			i=right_house_map.size();
-			right_house_map.put(user_id,new House(width/4*(ceil(i/3)+.5f),height/4*(i%3+.5f),user_name));
+	public AIsland getHouseById(String user_id,int left_right){
+		AIsland iland=null;
+		if(left_right==1) iland=map_left_island.get(user_id);
+		else if(left_right==0) iland=map_right_island.get(user_id);
+
+		return iland;
+	}
+	public void addDefaultHouse(){
+		for(int i=0;i<MISLAND;++i){
+			addNewHouse("default_left_"+i,1,true);
+			addNewHouse("default_right_"+i,0,true);
 		}
 	}
-	public void setBlow(String user_id,int left_right){
-		House house=null;
-		if(left_right==1) house=left_house_map.get(user_id);
-		else if(left_right==0) house=right_house_map.get(user_id);
+	public void addNewHouse(String user_id,int left_right,boolean is_default){
+		println(">>new house: "+user_id);
+		int i=-1;
+		if(left_right==1){
+			
+			boolean success=false;
+			String key_rmv=null;
+			AIsland iland=null;
 
-		if(house==null) return;
+			if(map_left_island.containsKey(user_id)){
+				success=true;
+				key_rmv=user_id;
+				iland=map_left_island.get(key_rmv);
+			}else{
+				for(String ikey:map_left_island.keySet()){
+					iland=map_left_island.get(ikey);
+					if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
+						success=true;
+						key_rmv=ikey;
+					}
+				}
+			}
+			if(success){
+				map_left_island.remove(key_rmv);	
+				map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
 
-		println("set blow: "+house.user_name);
-		house.setBlow();
+				println("Remove: "+key_rmv);
+			}else{
+				if(is_default){
+					i=map_left_island.size();
+					map_left_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
+				}else println("NO PLACE TO ADD A NEW HOUSE");
+			}
+
+
+			// i=map_left_island.size();
+			// if(i<MISLAND) map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
+			// else println("NO PLACE TO ADD A NEW HOUSE");
+
+
+		}else if(left_right==0){
+			
+			boolean success=false;
+			String key_rmv=null;
+			AIsland iland=null;
+
+			if(map_right_island.containsKey(user_id)){
+				success=true;
+				key_rmv=user_id;
+				iland=map_right_island.get(key_rmv);
+			}else{
+				for(String ikey:map_right_island.keySet()){
+					iland=map_right_island.get(ikey);
+					if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
+						success=true;
+						key_rmv=ikey;
+					}
+				}
+			}
+			if(success){
+				map_right_island.remove(key_rmv);	
+				map_right_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
+
+				println("Remove: "+key_rmv);
+			}else{
+				if(is_default){
+					i=map_right_island.size();
+					map_right_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
+				}else println("NO PLACE TO ADD A NEW HOUSE");
+			}
+
+			// i=map_right_island.size();
+			// if(i<MISLAND) map_right_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
+			// else println("NO PLACE TO ADD A NEW HOUSE");
+		}
+	}
+	public void setHouseName(AIsland iland,String set_name,int ipeople){
+		if(iland==null){
+			println("Illegal House!!");
+			return;
+		}
+		// drawIlandText(set_name);
+		iland.setName(set_name,ipeople);
+	}
+	public void setHousePart(AIsland iland,int b1,int p1,int p2,int p3,int p4){
+		if(iland==null){
+			println("Illegal House!!");
+			return;
+		}
+		iland.setBuilding(b1,p1,p2,p3,p4);
+	}
+	public void setHouseTrigger(AIsland iland,int type_trig){
+		if(iland==null){
+			println("Illegal House!!");
+			return;
+		}
+		iland.triggerMove(type_trig);
+	}
+
+
+	public PImage[] getBuildPartImage(ABuildPart[] arr_part){
+		int mpart=arr_part.length;
+		
+		PImage[] img_part=new PImage[mpart+1];
+		
+		img_part[0]=img_island;
+		
+		for(int i=0;i<mpart;++i){
+			img_part[i+1]=getBuildPart(arr_part[i]);
+		}
+		
+		return img_part;
+	}
+	public PImage getBuildPart(ABuildPart build_part){
+		
+		if(build_part==null) return null;
+
+		PImage img=null;
+
+		try{
+			if(build_part.icat==0) //build
+				img=arr_img_build_part.get(build_part.ibuild).get(0).get(build_part.getCurFrame());
+			else if(build_part.icat<5)
+				img=arr_img_build_part.get(build_part.ibuild).get(1+(build_part.icat-1)*IBUILD_PART+build_part.ipart).get(build_part.getCurFrame());
+			else //people
+				img=arr_img_people[build_part.ipart];
+		}catch(Exception e){
+			println(e.toString());
+			println("build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart);
+			return null;
+		}
+
+		if(img==null){
+			println("cannot get: build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart+" - "+build_part.getCurFrame());
+			println("file: "+getBuildPartFileName(build_part.ibuild,build_part.icat,build_part.ipart,build_part.getCurFrame()));
+		} 
+
+		return img;
+	}
+
+	public void drawScoreNumber(PGraphics pg,int nscore,int color_type){
+
+		pg.pushStyle();
+		pg.noStroke();
+		pg.textureMode(IMAGE);
+
+		pg.pushMatrix();
+		if(color_type==0) pg.translate(266,27);
+		else pg.translate(1524,27);
+
+		String score_str=nf(nscore,4);
+		// println(score_str+":");
+		float nwid=85;
+		for(int i=0;i<4;++i){
+			pg.pushMatrix();
+			pg.translate(i*nwid,0);
+			
+			int snum=(int)(score_str.charAt(i))-48;
+			if(color_type==0) pg.image(arr_img_blue_num[snum],0,0);
+			else pg.image(arr_img_red_num[snum],0,0);
+			
+			pg.popMatrix();
+		}
+
+		pg.popMatrix();
+
+		pg.popStyle();
+	}
+
+	public void triggerBuilding(){
+		for(AIsland iland:map_left_island.values()){
+			switch(iland.istage){
+				case NONE:
+					String set_name="";
+					int len=(int)random(3,8);
+					for(int i=0;i<len;++i) set_name+=PApplet.parseChar(97+i);
+					iland.setName(set_name,(int)random(5));
+					break;
+				case MAN:
+					iland.setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
+					iland.setBuildingImage(getBuildPartImage(iland.arr_build_part));
+					break;
+				case HOUSE:							
+					if(random(5)<1) iland.init(iland._pos.x,iland._pos.y);
+					else{
+						iland.triggerMove(0);
+						iland.triggerMove(1);	
+					}
+					break;
+						
+			}
+
+		} 
+		for(AIsland iland:map_right_island.values()){
+			switch(iland.istage){
+				case NONE:
+					String set_name="";
+					int len=(int)random(3,8);
+					for(int i=0;i<len;++i) set_name+=PApplet.parseChar(97+(int)random(26));
+					iland.setName(set_name,(int)random(5));
+					break;
+				case MAN:
+					iland.setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
+					iland.setBuildingImage(getBuildPartImage(iland.arr_build_part));
+					break;
+				case HOUSE:							
+						
+					if(random(5)<1) iland.init(iland._pos.x,iland._pos.y);
+					else{
+						iland.triggerMove(0);
+						iland.triggerMove(1);
+					}
+					break;
+						
+			}
+
+		} 
+	}
+
+	public void triggerTurb(){
+		
+		IntList change_pos=new IntList();
+		for(int i=0;i<MISLAND;++i) change_pos.append(i);
+		change_pos.shuffle();
+
+		AIsland[] left_land=map_left_island.values().toArray(new AIsland[0]);
+		for(int i=0;i<map_left_island.size();++i){
+			PVector dest_pos=left_land[change_pos.get(i)]._pos.get();
+			left_land[i].triggerTurb(dest_pos);
+		} 
+		for(ACloud acloud:arr_left_acloud) acloud.triggerTurb();
+
+		AIsland[] right_land=map_right_island.values().toArray(new AIsland[0]);
+		for(int i=0;i<map_right_island.size();++i){
+			PVector dest_pos=right_land[change_pos.get(i)]._pos.get();
+			right_land[i].triggerTurb(dest_pos);
+		} 
+		for(ACloud acloud:arr_right_acloud) acloud.triggerTurb();	
+
+	}
+}
+
+class AIsland{
+	
+	float _pscale;
+	PVector _pos;
+	PVector move_amp,move_vel,move_phi;
+
+	ABuildPart[] arr_build_part;
+	String build_name;
+
+	PGraphics pg_text,pg_build,pg_build_born;
+	PImage img_text;
+
+
+	boolean cat3_light_on;
+
+	AIslandAction istage;
+	FrameAnimation ani_man_born,ani_house_born;
+
+	FrameAnimation ani_turb;
+	PVector pos_turb_src,pos_turb_dest,amp_turb;
+
+
+	PShader shd_iland_merge;
+
+	int acc_score;
+	boolean is_default;
+
+	ArrayList<AScore> arr_score;
+
+	ARainGroup rain_group;
+
+
+	AIsland(float set_posx,float set_posy,boolean set_default){
+		
+		arr_score=new ArrayList<AScore>();
+		
+
+		init(set_posx,set_posy);
+
+		is_default=set_default;
+
+		if(is_default) setName();			
+		
+		
+	}
+	
+	public void init(float set_posx,float set_posy){
+
+		istage=AIslandAction.NONE;
+
+		// _posx=set_posx;
+		// _posy=set_posy;
+		_pos=new PVector(set_posx,set_posy);
+
+
+		move_amp=new PVector(15*random(.1f,2),5*random(.1f,1));
+		move_vel=new PVector(random(120,180),random(120,180));
+		move_phi=new PVector(random(TWO_PI),random(TWO_PI));
+
+		ani_man_born=new FrameAnimation(60);
+		ani_house_born=new FrameAnimation(60);
+		ani_house_born.is_elastic=true;
+
+		ani_turb=new FrameAnimation(180);
+
+		rain_group=new ARainGroup();
+
+		reset();
+	}
+	public void reset(){
+		_pscale=1;	
+
+		arr_build_part=new ABuildPart[6];
+		for(int i=0;i<6;++i) arr_build_part[i]=null;
+
+		pg_build=null;
+		pg_text=null;
+		pg_build_born=null;
+
+
+		cat3_light_on=true;
+		
+		build_name="";
+
+		shd_iland_merge=loadShader("Island_Merge.frag");
+
+		if(arr_score!=null) arr_score.clear();
+
+		img_text=null;
+
+	}
+	public void setName(){
+		setName("",(int)random(5));
+	}
+	public void setName(String set_name,int p5){
+
+		arr_build_part[5]=new ABuildPart(p5,5,p5);	
+		build_name=set_name;
+		drawTextGraph();
+
+		img_text=null;
+
+		istage=AIslandAction.MAN_BORN;
+		ani_man_born.Start();
+		
+	}
+	public void setBuilding(){
+		setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
+	}
+	public void setBuilding(int b1,int p1,int p2,int p3,int p4){
+
+		arr_build_part[0]=new ABuildPart(b1,0,0); // cat1
+		arr_build_part[1]=new ABuildPart(b1,1,p1); // cat1
+		arr_build_part[2]=new ABuildPart(b1,2,p2); // cat2
+		arr_build_part[3]=new ABuildPart(b1,3,p3); // cat3
+		arr_build_part[4]=new ABuildPart(b1,4,p4); // cat4
+	
+		istage=AIslandAction.HOUSE_BORN;
+		ani_house_born.Start();
+
+		
+
+		if(is_default) return;
+
+		int tscore=0;
+		tscore+=300*5;
+		if(p4==0) tscore-=100;
+		if(p4==1) tscore-=50;
+
+		addScore(tscore,false);
+		
+
+	}
+
+	public void setBuildingImage(PImage[] img_part){
+		pg_build=createGraphics(162,288);
+
+		pg_build.beginDraw();
+		
+		// pg_build.pushMatrix();
+		// 	pg_build.translate(81,144);
+				drawBuildGraph(pg_build,img_part,81,144);
+		// pg_build.popMatrix();
+
+		pg_build.endDraw();
+
+		shd_iland_merge.set("src_texture",pg_build);
+
+	}
+
+	public void draw(PGraphics pg,PImage[] img_part){
+
+		// drawBuildGraph(img_part);
+
+
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+
+		// pg.stroke(255,0,0);
+		pg.pushMatrix();
+		
+		if(istage==AIslandAction.TURB){
+			float turb_t=ani_turb.GetPortion();
+			float mov_t=(turb_t<.25f)?0:((turb_t>.75f)?1:(turb_t-.25f)*2);
+			PVector cur_pos=PVector.lerp(pos_turb_src,pos_turb_dest,mov_t);
+			pg.translate(cur_pos.x,cur_pos.y);
+
+			float virb_t=turb_t;//(turb_t<.25)?turb_t*4:((turb_t>.75)?(turb_t-.75)*4:0);
+			pg.translate(move_amp.x*60*sin(PI*virb_t*amp_turb.x),move_amp.y*60*sin(PI*virb_t*amp_turb.y));
+
+		}else{
+			pg.translate(_pos.x+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_pos.y+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
+		}
+
+			if(img_part[0]!=null) pg.image(img_part[0],0,0);
+
+			
+			drawBuildGraph(pg,img_part,0,-75);
+			
+
+			if(img_part[6]!=null){
+				pg.pushMatrix();
+				pg.translate(50,-42);
+				// pg.scale(ani_man_born.GetPortion());
+				if(img_part[6]!=null){
+					float twid=img_part[6].width;
+					float thei=img_part[6].height;
+					float offy=0;
+					float tport=ani_man_born.GetPortion();
+					pg.textureMode(IMAGE);
+					pg.noStroke();
+
+					pg.beginShape();
+					pg.texture(img_part[6]);
+						pg.vertex(-twid/2,thei/2-(thei-offy)*tport-offy,0,0);
+						pg.vertex(twid/2,thei/2-(thei-offy)*tport-offy,twid,0);
+						pg.vertex(twid/2,thei/2,twid,(thei-offy)*tport+offy);
+						pg.vertex(-twid/2,thei/2,0,(thei-offy)*tport+offy);								
+					pg.endShape();
+				} //pg.image(img_part[i],0,0);
+
+				pg.popMatrix();
+			}
+
+				
+
+			// if(pg_text!=null) pg.image(pg_text,50,2);
+			if(img_text!=null) pg.image(img_text,50,2);
+						
+			if(rain_group!=null) rain_group.draw(pg,-80,-RAIN_THRES);
+
+
+			pg.pushMatrix();
+			pg.translate(0,-120);
+				for(AScore score:arr_score) 
+					if(!score.isDead()) score.draw(pg);
+			pg.popMatrix();
+
+		pg.popMatrix();
+
+		pg.popStyle();
+
+	}
+	public void drawTextGraph(){
+		// pg_text=createGraphics(200,52,P3D);
+		// pg_text.beginDraw();
+		// 	pg_text.translate(pg_text.width/2,pg_text.height/2);
+		// 	pg_text.scale(1,2);
+		// 	pg_text.background(0);
+		// 	pg_text.textFont(name_font);
+		// 	pg_text.textSize(18);
+		// 	pg_text.textAlign(CENTER,CENTER);
+		// 	pg_text.fill(255);
+
+		// 	pg_text.text(build_name,0,0);
+		// 	for(int i=0;i<2;++i) pg_text.filter(DILATE);
+
+		// 	pg_text.fill(65,103,177);
+		// 	pg_text.text(build_name,0,0);
+
+		// 	// pg_text.shader(shd_rmv_bg);
+		// 	// pg_text.loadPixels();
+		// 	for(int i=0;i<pg_text.width;++i)
+		// 		for(int j=0;j<pg_text.height;++j){
+		// 			color tcolor=pg_text.get(i,j);
+		// 			if(red(tcolor)<65 || green(tcolor)<103 || blue(tcolor)<177) pg_text.set(i,j,color(0,0));
+		// 			else pg_text.set(i,j,color(tcolor,255));
+		// 		}
+
+		// pg_text.endDraw();
+		// pg_text=getTextGraph(build_name);
+		// img_text=pg_text.textureImage;
+	}
+	public void drawBuildGraph(PGraphics pg,PImage[] img_part,float px,float py){
+		
+		pg.pushMatrix();
+			pg.translate(px,py);
+			pg.scale(.8f);
+			pg.imageMode(CENTER);
+
+			float tport=ani_house_born.GetPortion();
+
+			for(int i=1;i<6;++i){
+				if(img_part[i]!=null){
+					if(arr_build_part[i-1].is_light && !cat3_light_on) continue; 
+					// pg.image(img_part[i],0,0);
+
+					float twid=img_part[i].width;
+					float thei=img_part[i].height;
+					float offy=0.3f*thei;
+					
+					pg.textureMode(IMAGE);
+					pg.noStroke();
+					pg.pushMatrix();
+					pg.translate(0,-thei*(1-constrain(tport,0,.5f)*2));
+
+					float vtport=(tport<.5f)?0:1-(tport-.5f)*2;
+					pg.translate(random(-1,1)*(vtport)*20,random(-1,1)*(vtport)*20);
+					pg.rotate(random(-1,1)*(vtport)*PI/12);
+
+					pg.image(img_part[i],0,0);
+
+					// pg.beginShape();
+					// pg.texture(img_part[i]);
+					// 	pg.vertex(-twid/2,thei/2-(thei-offy)*tport-offy,0,   0);
+					// 	pg.vertex( twid/2,thei/2-(thei-offy)*tport-offy,twid,0);
+					// 	pg.vertex( twid/2,thei/2-offy*(1-tport),		twid,(thei-offy)*tport+offy);
+					// 	pg.vertex(-twid/2,thei/2-offy*(1-tport),		0,	 (thei-offy)*tport+offy);								
+					// pg.endShape();
+
+					pg.popMatrix();
+				}
+			}
+		pg.popMatrix();
+		
+	}
+	public void drawBuildBorn(PGraphics pg,PImage build_img){
+		
+		
+
+		// println("Draw Born!");
+		// shd_iland_merge.set("t_port",ani_house_born.GetPortion());
+
+		// pg_build_born.clear();
+
+		pg.beginDraw();
+			// pg_build_born.background(0,0);
+			// pg_build_born.noStroke();
+			// pg_build_born.shader(shd_iland_merge);
+			// pg_build_born.rect(0,0,pg_build_born.width,pg_build_born.height);
+			float twid=pg_build.width;
+			float thei=pg_build.height;
+			float offy=0;
+			float tport=ani_house_born.GetPortion();
+			pg.textureMode(IMAGE);
+			pg.noStroke();
+
+			pg.pushMatrix();
+			pg.translate(twid/2,thei/2);
+			pg.beginShape();
+			pg.texture(build_img);
+				pg.vertex(-twid/2,thei/2-(thei-offy)*tport-offy,0,0);
+				pg.vertex(twid/2,thei/2-(thei-offy)*tport-offy,twid,0);
+				pg.vertex(twid/2,thei/2,twid,(thei-offy)*tport+offy);
+				pg.vertex(-twid/2,thei/2,0,(thei-offy)*tport+offy);								
+			pg.endShape();
+			pg.popMatrix();
+
+		pg.endDraw();
+
+	}
+	public void update(){
+
+		switch(istage){
+			case MAN_BORN:
+				ani_man_born.Update();
+				if(ani_man_born.GetPortion()==1){
+					istage=AIslandAction.MAN;
+					if(is_default) setBuilding(); 	
+				}
+				break;
+			case HOUSE_BORN:
+				ani_house_born.Update();
+				if(ani_house_born.GetPortion()==1){
+					istage=AIslandAction.HOUSE;
+					for(AScore score:arr_score)	score.start();
+				} 
+
+				// if(pg_build_born==null) pg_build_born=createGraphics(162,288,P3D);
+				// drawBuildBorn(pg_build_born,pg_build);
+				break;	
+			case TURB:
+				ani_turb.Update();
+				if(!ani_turb.ani_start){
+					istage=AIslandAction.HOUSE;
+					_pos=pos_turb_dest.get();	
+				} 
+				break;
+		}
+		
+		
+		
+		// for(AScore score:arr_score) score.update();
+		Iterator<AScore> it=arr_score.iterator();
+		while(it.hasNext()){
+			AScore score=it.next();
+			score.update();
+		    if(score.isDead()) it.remove();		        
+		}
+
+
+		for(ABuildPart part:arr_build_part) 
+			if(part!=null) part.update();
+
+		if(rain_group!=null) rain_group.update();
+
+	}
+	public void triggerMove(int type){
+
+		// acc_score+=25;
+
+		switch(type){
+			case 0: //cat-2
+				if(arr_build_part[2].start()) addScore(25,true);
+				break;
+			case 1:	//cat-3
+				if(arr_build_part[3].ipart>1) arr_build_part[3].start();
+				else cat3_light_on=!cat3_light_on;
+				if(!cat3_light_on) addScore(25,true);
+				break;
+			case 2: // rain
+				if(rain_group!=null){
+					if(rain_group.start()) addScore(25,true);
+				}
+				break;
+			default :
+				acc_score-=25;
+				break;	
+		}
+
+	}
+
+	public void triggerTurb(PVector dest_pos){
+		
+		if(istage==AIslandAction.HOUSE){
+			
+			println("Trigger Turb!");
+
+			pos_turb_dest=dest_pos.get();
+			pos_turb_src=_pos.get();
+			amp_turb=new PVector((int)random(2,6)*(random(2)<1?1:-1),(int)random(2,6)*(random(2)<1?1:-1));
+			ani_turb.Restart();
+			istage=AIslandAction.TURB;
+		}
+	}
+
+
+	public void gotoDie(){
+
+		istage=AIslandAction.DEAD;
+		reset();
+
+	}
+
+	public void addScore(int add_score,boolean trigger){
+		acc_score+=add_score;
+		AScore score=new AScore(add_score);
+		arr_score.add(score);
+		if(trigger) score.start();
+	}
+}
+
+
+class ABuildPart{
+
+	boolean is_anim;
+	int ibuild,icat,ipart;
+	ImageSeq img_seq;
+	
+	boolean is_light;
+
+	ABuildPart(int sibuild,int sicat,int sipart){
+		
+		ibuild=sibuild;
+		icat=sicat;
+		ipart=sipart;
+
+		if(icat==2) is_anim=true;
+		if(icat==3 && ipart>1) is_anim=true;
+		
+		if(icat==3 && ipart<2) is_light=true;
+		else is_light=false;
+
+		if(is_anim){
+			img_seq=new ImageSeq(60);
+			if(icat==3 && ipart>1) img_seq.reverse_looped=true;
+		}else img_seq=new ImageSeq(1);
+		
+		img_seq.looped=false;
+
+		// start();
+	}
+	public void reset(){
+		img_seq.reset();
+	}
+	public boolean start(){
+		println("Part Start!");
+		if(!img_seq.isplaying){
+			img_seq.play();
+			return true;	
+		} 
+		return false;
+	}
+	public void stop(){
+		img_seq.pause();
+	}
+	public void update(){
+		img_seq.update();
+	}
+	public int getCurFrame(){
+		return img_seq.getFrame();
 	}
 
 }
 
+
+final float RAIN_THRES=350;
+final float RAIN_TIME=120;
+
+class ARayLine{
+	float x,y,len;
+	float z;
+	float vel;
+	ARayLine(float x_,float y_,float len_){
+		x=x_; y=y_; len=len_;
+		z=-width/2; vel=random(10)+5;
+	}
+	public void draw(PGraphics pg){
+		pg.stroke(255,120);
+		pg.line(x,y,x,constrain(y+len,0,RAIN_THRES));
+		update();
+	}
+	public void update(){
+		y+=vel;
+		// len+=vel*.1;
+		if(y>RAIN_THRES) y=0;
+	}
+}
+
+
+class ARainGroup{
+
+	ArrayList<ARayLine> arr_ray;
+	FrameAnimation ani_rain;
+
+	ARainGroup(){
+		arr_ray=new ArrayList<ARayLine>();
+		for(int i=0;i<20;++i) arr_ray.add(new ARayLine(random(160),0,random(20)+7));
+		ani_rain=new FrameAnimation(RAIN_TIME);
+	}
+	public void update(){
+		if(!ani_rain.ani_start) return;
+		for(ARayLine ray:arr_ray) ray.update();
+		ani_rain.Update();
+	}
+	public void draw(PGraphics pg,float px,float py){
+
+		if(!ani_rain.ani_start) return;
+
+		pg.pushMatrix();
+		pg.translate(px,py);
+		for(ARayLine ray:arr_ray) ray.draw(pg);	
+		pg.popMatrix();
+
+	}
+	public boolean start(){
+		if(!ani_rain.ani_start){
+			ani_rain.Restart();
+			return true;	
+		} 
+		return false;
+	}
+}
+
+class AScore{
+
+	FrameAnimation ani_born,ani_life;
+	int mscore;
+	boolean is_dead=false;
+
+	AScore(int set_score){
+		mscore=set_score;
+
+		ani_born=new FrameAnimation(10);
+		ani_life=new FrameAnimation(80);
+		ani_life.is_elastic=true;
+
+		
+	}
+	public void start(){
+		ani_born.Restart();
+	}
+	public void update(){
+		
+		if(is_dead) return;
+
+		ani_born.Update();
+		if(ani_born.GetPortion()==1 && !ani_life.ani_start) ani_life.Restart();
+
+		ani_life.Update();
+		if(ani_life.GetPortion()==1) is_dead=true;
+	}
+	public void draw(PGraphics pg){
+		pg.pushStyle();
+		pg.fill(229,230,66,255*(1-ani_life.GetPortion()));
+		pg.textAlign(CENTER);
+		pg.textSize(18);
+
+		pg.pushMatrix();
+		pg.translate(0,ani_life.GetPortion()*(-200.0f));
+		pg.scale(ani_born.GetPortion());
+		pg.text("+"+mscore,0,0);
+
+		pg.popMatrix();
+
+		pg.popStyle();
+	}
+	public boolean isDead(){
+		return is_dead;
+	}
+
+}
 final float MOTION_VEL=6;
 //final PVector MOTION_BOUND=new PVector(1024,400);
 final float MOTION_BOUND_X[]={-50,4060};
@@ -1041,16 +2321,22 @@ class BGameScene extends GameScene{
 	PImage[] arr_mapcar_img;
 	PImage[] arr_map_img;
 	PImage[] arr_img_fighting;
+	PImage[] arr_img_winlose;
 
 	IconLine[] arr_icon_line;
 
 	Timer timer_sleep;
+
+	CountDown mcount_down;
+
 
 	BGameScene(){
 		super();
 		arr_car=new EnergyCar[2];
 		arr_car[0]=new EnergyCar(512,200,0);
 		arr_car[1]=new EnergyCar(512,200,1);
+
+		mcount_down=new CountDown(3);
 	}
 
 	public @Override
@@ -1125,8 +2411,11 @@ class BGameScene extends GameScene{
 		arr_img_fighting[0]=loadImage(DataFolder+"Fighting_yellow.png");
 		arr_img_fighting[1]=loadImage(DataFolder+"Fighting_red.png");
 
-		
-		
+	
+		arr_img_winlose=new PImage[2];
+		arr_img_winlose[0]=loadImage(DataFolder+"sign_win.png");
+		arr_img_winlose[1]=loadImage(DataFolder+"sign_lose.png");
+
 
 		arr_icon_line=new IconLine[6];
 		arr_icon_line[0]=new IconLine((int)random(ITRANSCAR),-1);
@@ -1155,6 +2444,8 @@ class BGameScene extends GameScene{
 		// CAR_DEST_DIST=mov_road_left.duration();
 
 		for(int i=0;i<2;++i) arr_car[i].reset();
+
+		
 	}
 
 
@@ -1185,8 +2476,15 @@ class BGameScene extends GameScene{
 			}
 			mov_road_loop.read();
 
-		}else if(game_state==GameState.PLAY){
+		}else if(game_state==GameState.COUNT_DOWN){
 
+			mcount_down.update();
+			if(mcount_down.isFinished()){
+				if(!OFFLINE) photon_client.sendStartRunEvent();	
+				mcount_down.reset();
+			}
+
+		}else if(game_state==GameState.PLAY){
 			if(mcur_player==1){
 				if(random(50)<1) arr_car[1].updatePosition((int)random(-2,2));
 			}
@@ -1235,13 +2533,14 @@ class BGameScene extends GameScene{
 				 if(car.arriveGoal()){
 				 	one_arrive=true;
 				 	iwinner=i;
+				 	println("Car "+i+" ARRIVE!!");
 				 	break;
 				 }
 			}
 			if(one_arrive){
-				 println("ARRIVE!!");
+				 
 				 int[] scores=GetScores();
-				 if(!OFFLINE) photon_client.sendScoreEvent(scores[0],scores[1]);
+				 // if(!OFFLINE) photon_client.sendScoreEvent(scores[0],scores[1]);
 				 endRound();
 			}
 		}else{
@@ -1254,7 +2553,7 @@ class BGameScene extends GameScene{
 		mov_road_left.read();
 		mov_road_right.read();
 
-	
+		
 	}
 	
 	
@@ -1269,18 +2568,29 @@ class BGameScene extends GameScene{
 		if(game_state==GameState.WAIT) sub_pg.image(mov_road_loop,0,0);	
 		else sub_pg.image(mov_road_left,0,0);
 		
+		
+
+		switch(game_state){
+			case COUNT_DOWN:
+				mcount_down.draw(sub_pg,512,192);
+				break;
+			case END:
+				if(arr_car[0].getScore()>=arr_car[1].getScore()) sub_pg.image(arr_img_winlose[0],89,24.5f);
+				else sub_pg.image(arr_img_winlose[1],89,24.5f);
+				break;		
+
+			case PLAY:
+
+				for(int i=0;i<3;++i){
+					int _index=arr_icon_line[i].icon_index;
+					PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
+					
+					arr_icon_line[i].draw(sub_pg,_icon);	
+				} 
+				break;
+		}
 		arr_car[0].draw(sub_pg);
-
-
-		if(game_state!=GameState.PLAY) return;
-
-		for(int i=0;i<3;++i){
-			int _index=arr_icon_line[i].icon_index;
-			PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
-			
-			arr_icon_line[i].draw(sub_pg,_icon);	
-		} 
-			
+		
 	}
 
 	public @Override
@@ -1295,27 +2605,31 @@ class BGameScene extends GameScene{
 			arr_car[1].draw(sub_pg);			
 
 		}else{
+
 			// if(mcur_player==2){
 				sub_pg.image(mov_road_right,0,0);
+				
+				
+				switch(game_state){
+					case COUNT_DOWN:
+						mcount_down.draw(sub_pg,512,192);
+						break;
+					case END:
+						if(arr_car[1].getScore()>=arr_car[0].getScore()) sub_pg.image(arr_img_winlose[0],89,24.5f);
+						else sub_pg.image(arr_img_winlose[1],89,24.5f);
+						break;
+
+					case PLAY:
+						for(int i=3;i<6;++i){
+							int _index=arr_icon_line[i].icon_index;
+							PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
+							
+							arr_icon_line[i].draw(sub_pg,_icon);		
+						}	
+				}
 				arr_car[1].draw(sub_pg);
-		
-				if(game_state!=GameState.PLAY) return;
-
-
-				for(int i=3;i<6;++i){
-					int _index=arr_icon_line[i].icon_index;
-					PImage _icon=(_index>ITRANSCAR-1)?arr_img_origin_car[_index-ITRANSCAR+2]:arr_img_icon.get(_index);
-					
-					arr_icon_line[i].draw(sub_pg,_icon);		
-				}	
-			// }else{
-			// 	DrawLeftScreen(sub_pg);
-			// }
 		} 
 		
-
-		
-		 
 		
 	}
 
@@ -1324,7 +2638,6 @@ class BGameScene extends GameScene{
 		sub_pg.background(255);
 		sub_pg.image(mov_back_center,0,0);
 		
-		if(game_state==GameState.WAIT){
 			
 			sub_pg.pushMatrix();
 			sub_pg.translate(80,88);
@@ -1342,7 +2655,10 @@ class BGameScene extends GameScene{
 			sub_pg.popMatrix();
 
 			sub_pg.pushMatrix();
+				sub_pg.pushStyle();
+				sub_pg.tint(255,255*abs(sin((float)frameCount/8)),255);
 				sub_pg.image(arr_img_fighting[0],1016-336,88-35);
+				sub_pg.popStyle();
 			sub_pg.popMatrix();
 			
 			sub_pg.pushMatrix();
@@ -1360,8 +2676,8 @@ class BGameScene extends GameScene{
 				sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
 			sub_pg.popMatrix();				
 
-			return;
-		}
+		if(game_state==GameState.WAIT) return;
+		
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(80,88);
@@ -1378,8 +2694,8 @@ class BGameScene extends GameScene{
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(160,50);
-			sub_pg.image(arr_map_img[0],0,0);
-				// float left_pos=arr_car[0].run_distance;
+			// sub_pg.image(arr_map_img[0],0,0);
+			// 	// float left_pos=arr_car[0].run_distance;
 	
 			float left_pos=arr_car[0].run_distance/CAR_DEST_DIST;
 			sub_pg.pushStyle();
@@ -1390,9 +2706,6 @@ class BGameScene extends GameScene{
 	
 		sub_pg.popMatrix();
 
-		sub_pg.pushMatrix();
-			sub_pg.image(arr_img_fighting[0],1016-336,88-35);
-		sub_pg.popMatrix();
 		
 		sub_pg.pushMatrix();
 		sub_pg.translate(1952,88);
@@ -1413,7 +2726,7 @@ class BGameScene extends GameScene{
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(2032-160,50);
-			sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
+			// sub_pg.image(arr_map_img[1],-arr_map_img[1].width,0);
 
 			// float right_pos=arr_car[1].run_distance;
 			float right_pos=0;
@@ -1446,6 +2759,10 @@ class BGameScene extends GameScene{
 				if(mcur_player==2) arr_car[1].user_id=(String)params.get((byte)200);
 				StartGame();
 				break;
+			case Server_Start_Run:
+				startRoad();
+				break;
+
 			// case Server_User_Color:
 			// 	int car_color=(Integer)params.get((byte)1);
 			// 	if(car_color>=0 && car_color<=1) arr_car[car_color].user_id=(String)params.get((byte)100);
@@ -1484,27 +2801,49 @@ class BGameScene extends GameScene{
 			timer_sleep=null;
 			// this.Init();
 		}
-
-		
+	
 		super.StartGame();
+		game_state=GameState.COUNT_DOWN;
 		iwinner=-1;
 		
-		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
-		for(IconLine icon:arr_icon_line) icon.restart();
-
+		for(int i=0;i<2;++i) arr_car[i].reset();
+		// for(IconLine icon:arr_icon_line) icon.restart();
+		for(IconLine icon:arr_icon_line) icon.pause();
 	
 		mov_road_right.play();
 		mov_road_right.jump(0);
-		
+		mov_road_right.pause();
+
 		mov_road_left.play();		
 		mov_road_left.jump(0);
+		mov_road_left.pause();
+
+
+		mcount_down.start();
+
 
 		// CAR_DEST_DIST=mov_road_left.duration();
 		println("CAR_DEST_DIST= "+CAR_DEST_DIST);
 
 		mov_road_loop.stop();
-	}
 
+		if(OFFLINE) startRoad();
+	}
+	public void startRoad(){
+
+		game_state=GameState.PLAY;
+
+		
+
+		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
+		for(IconLine icon:arr_icon_line) icon.restart();
+
+		
+		mov_road_right.play();
+
+		mov_road_left.play();		
+
+	}
 	public void endRound(){
 
 		println("----- End Round -----");
@@ -1515,7 +2854,14 @@ class BGameScene extends GameScene{
 		for(EnergyCar car:arr_car) car.stopRun();
 		for(IconLine icon:arr_icon_line) icon.pause();
 
-		if(!OFFLINE) photon_client.sendScoreEvent(arr_car[0].getScore(),arr_car[1].getScore());
+		if(!OFFLINE){
+			int send_icar1=arr_car[0].cur_icar;
+			if(send_icar1==-1) send_icar1=8;
+			int send_icar2=arr_car[1].cur_icar;
+			if(send_icar2==-1) send_icar1=9;
+			
+			photon_client.sendScoreEvent(arr_car[0].getScore(),arr_car[1].getScore(),send_icar1,send_icar2);	
+		} 
 
 		super.EndGame();
 
@@ -2118,6 +3464,7 @@ class CGameScene extends GameScene{
 		switch(event_code){
 			case Server_Set_Face:
 				setFace(params);
+				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
 			case Server_LGG:
 				println("------The End------");
@@ -2349,8 +3696,77 @@ class ClockNumber{
 		return (int)cur_frame;
 	}
 }
+class CountDown{
+	
+	int count_num;
+	int cur_num;
+	FrameAnimation ani_per_num;
+	PImage[] arr_img_num;
 
-final float ROAD_MOV_SPEED=5;
+	boolean finished;
+	boolean started;
+
+	CountDown(int set_num){
+		ani_per_num=new FrameAnimation(40);
+		count_num=set_num;
+		cur_num=0;
+
+		arr_img_num=new PImage[count_num];
+		for(int i=0;i<3;++i){
+			arr_img_num[i]=loadImage("GAME_B/count_"+nf(i+1,1)+".png");
+		}
+	}
+	public void reset(){
+		started=false;
+	}
+	public void start(){
+		cur_num=count_num;
+		ani_per_num.Restart();
+		finished=false;
+		started=true;
+	}
+	public void update(){
+
+		if(!started) return;
+
+		ani_per_num.Update();
+		if(ani_per_num.GetPortion()==1){
+			if(cur_num>0){
+				cur_num--;
+				ani_per_num.Restart();
+			}else{
+				finished=true;
+				// cur_num=count_num;
+				// ani_per_num.Restart();
+			}
+		}
+	}
+	public boolean isFinished(){
+		return started && finished;
+	}
+	public void draw(PGraphics pg,float x,float y){
+		
+		if(cur_num<1) return;
+
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		// pg.blendMode();
+
+		pg.pushMatrix();
+		pg.translate(x,y);
+		// pg.translate(x,220,map(ani_per_num.GetPortion(),0,1,-800,100));
+			pg.scale(constrain(ani_per_num.GetPortion(),0,.5f)*2);		
+			pg.image(arr_img_num[cur_num-1],0,0);
+		pg.popMatrix();
+		
+		pg.popStyle();
+
+	}
+
+
+}
+
+final float ROAD_MOV_SPEED=1;
 final float CAR_BASE_VEL=1;
 final float CAR_DEST_DIST=60;
 
@@ -2440,7 +3856,8 @@ class EnergyCar{
 		if(DRAW_DEBUG){
 			pg.textSize(16);
 			pg.fill(255,0,0);
-			pg.text(dest_vel,10,20);			
+			pg.text(dest_vel,10,20);
+			pg.text(run_distance,10,40);			
 		}
 		float _pos=getCurPosition();
 		pg.translate(map(_pos,-1,1,ROAD_LINE[0],ROAD_LINE[1]),300,map(ani_end_transform.GetPortion(),0,1,0,-800));
@@ -2458,7 +3875,10 @@ class EnergyCar{
 			// }
 			if(ani_end_transform.GetPortion()<1) pg.image(pg_img,0,0);
 
-    		if(DRAW_DEBUG) pg.text(ani_car_transform.GetPortion(),-20,-50);
+    		if(DRAW_DEBUG){
+    			pg.text(ani_car_transform.GetPortion(),-20,-50);	
+
+    		} 
 		pg.popMatrix();
 
 
@@ -2588,7 +4008,7 @@ class EnergyCar{
 	}
 	public void updatePosition(int delta_position){
 		
-		float _dest=constrain(dest_pos+delta_position,-1,1);
+		float _dest=delta_position;
 		if(_dest==dest_pos) return;
 		
 		cur_pos=lerp(cur_pos,dest_pos,ani_pos.GetPortion());
@@ -2611,11 +4031,13 @@ class EnergyCar{
 		ani_icontext.Restart();
 
 
-		if(iset_car<4) dest_vel=2*ROAD_MOV_SPEED;
+		if(iset_car<4) dest_vel=2.3f*ROAD_MOV_SPEED;
 		else if(iset_car<ITRANSCAR) dest_vel=1.5f*ROAD_MOV_SPEED;
 		else{
-			dest_vel=1*ROAD_MOV_SPEED;
+			// dest_vel=.6*ROAD_MOV_SPEED;
+			dest_vel=cur_vel-0.4f*ROAD_MOV_SPEED;
 			ani_car_transform.Restart();
+			ani_icon_timer.Restart();	
 			is_bump_transform=true;
 			seq_effect.pause();
 			return;
@@ -2704,7 +4126,7 @@ class EnergyCar{
 		return ani_end_transform.GetPortion()==1;
 	}
 	public int getScore(){
-		return (int)(run_distance/CAR_DEST_DIST*100);
+		return (int)(run_distance);
 	}
 	public int getCurFrame(){
 		//println(seq_car.icur_frame);
@@ -3117,9 +4539,9 @@ class FrameAnimation{
 }
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,176,1024,384};
-	final int[] Center_Screen_Rect={0,0,2032,176};
-	final int[] Right_Screen_Rect={2032,0,1024,384};
+	final int[] Left_Screen_Rect={0,0,1024,384};
+	final int[] Center_Screen_Rect={1024,0,2032,176};
+	final int[] Right_Screen_Rect={3056,0,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -3143,18 +4565,18 @@ class GameScene{
 	public void Load(){
 		println("Load Game.....");
 
-		if(!finish_load && thread_load==null){
-			thread_load=new Thread(new Runnable(){
-			    public void run(){
-			    	println(".... Start Loading .....");
+		// if(!finish_load && thread_load==null){
+		// 	thread_load=new Thread(new Runnable(){
+		// 	    public void run(){
+		// 	    	println(".... Start Loading .....");
 			        loadFiles();
 			        println(".... End Loading .....");
 			        finish_load=true;
 			        // Init();
-			    }
-			});  
-			thread_load.start();
-		}
+		// 	    }
+		// 	});  
+		// 	thread_load.start();
+		// }
 	}
 	public void Init(){
 		
@@ -3178,12 +4600,12 @@ class GameScene{
 
 		left_pg.beginDraw();
 			DrawLeftScreen(left_pg);
-			if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
+			// if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
 		left_pg.endDraw();
 
 		right_pg.beginDraw();
 			DrawRightScreen(right_pg);
-			if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
+			// if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
 		right_pg.endDraw();
 		
 		center_pg.beginDraw();
@@ -3235,93 +4657,10 @@ class GameScene{
 		pg.pushStyle();
 		pg.tint(255,255*sin((float)frameCount/50));
 			pg.image(img_qrcode_title,0,0);
-			pg.tint(255,abs(sin((float)frameCount/50))*105+150);
+			// pg.tint(255,abs(sin((float)frameCount/50))*105+150);
 			if(is_android) pg.image(img_qrcode_android,383,105);
 			else pg.image(img_qrcode_ios,383,105);
 		pg.popStyle();
-	}
-}
-class House{
-	
-	final int BLOW_INTERVAL=120;
-
-	String user_name;
-
-	float x,y,wid,hei;
-	float vel,phi;
-	int fcolor;
-	int mlayer;
-	PVector[] corners;
-	float rotate_level=0;
-
-	int blow_time;
-
-	House(float x_,float y_,String name_){
-		
-		x=x_; y=y_; user_name=name_;
-
-		wid=random(120,200);
-		hei=random(120,240);
-
-		vel=random(50,150);
-		phi=random(TWO_PI);
-
-		fcolor=color(random(200,255),random(200,255),random(200,255));
-		mlayer=(int)random(5,8);
-
-		float elayer=hei/(float)mlayer;
-		corners=new PVector[mlayer*4];
-		for(int i=0;i<mlayer;++i){
-			corners[i*4]=new PVector(random(-.2f,.2f)*wid,(elayer*i)*random(.2f,1.5f));
-			corners[i*4+1]=new PVector(random(.5f,1.5f)*wid,(elayer*i)*random(.3f,1.5f));
-			corners[i*4+2]=new PVector(random(.8f,1.5f)*wid,(elayer*(i+1))*random(.5f,1.2f));
-			corners[i*4+3]=new PVector(random(-.2f,.2f)*wid,(elayer*(i+1))*random(.2f,1.8f));
-		}
-
-	}
-	public void draw(PGraphics pg){
-		float draw_portion=sin((float)frameCount/vel+phi);
-
-		pg.pushMatrix();
-		pg.translate(x+.15f*wid*draw_portion,y+.2f*hei*draw_portion);
-		pg.pushStyle();
-			pg.text(user_name,10,10);
-			for(int i=0;i<mlayer;++i){
-				pg.pushMatrix();
-				pg.translate(wid/2,0);
-				pg.rotateY((float)frameCount/(100*sin((float)i/2))*rotate_level);
-				pg.translate(-wid/2,0);
-
-				pg.fill(red(fcolor)*(1+.2f*sin(i)),green(fcolor)*(1+.2f*cos(i)),blue(fcolor),180);
-				pg.beginShape();
-					pg.vertex(corners[i*4].x,corners[i*4].y);
-					pg.vertex(corners[i*4+1].x,corners[i*4+1].y);
-					pg.vertex(corners[i*4+2].x,corners[i*4+2].y);
-					pg.vertex(corners[i*4+3].x,corners[i*4+3].y);
-				pg.endShape(CLOSE);
-				pg.popMatrix();
-			}
-
-		pg.popStyle();
-
-		pg.popMatrix();
-
-		updateHouse();
-	}
-	public void setRotateLevel(boolean up){
-		if(up) rotate_level+=.1f;
-		else rotate_level-=.1f;
-	}
-	public void setBlow(){
-		if(blow_time<=0) blow_time=BLOW_INTERVAL;
-
-	}
-	public void updateHouse(){
-		if(blow_time>0){
-			blow_time--;
-			rotate_level=3;
-		}else rotate_level=0;
-
 	}
 }
 
@@ -3329,7 +4668,7 @@ class House{
 class IconLine{
 	
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=60;
+	final float ICON_DELAY=120;
 	
 	float pos_x;
 
@@ -3380,7 +4719,7 @@ class IconLine{
 		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
 			ani_icon.setDelay(ICON_DELAY*random(1,3));
 			ani_icon.Restart();
-			icon_index=(int)random(ITRANSCAR+2);
+			icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
 			ani_explode.Reset();
 			// ani_text.Reset();
 			is_explode=false;
@@ -3470,6 +4809,8 @@ class ImageSeq{
 
 	boolean isplaying=false;
 	boolean looped=true;
+	boolean reverse_looped=false;
+	boolean reverse=false;
 
 	ImageSeq(int _mframe){
 		mframe=_mframe;
@@ -3485,16 +4826,38 @@ class ImageSeq{
 
 	}
 	public void update(){
-		if(!isplaying) return;
-		if(icur_frame<mframe) icur_frame+=frame_vel;
-		if(icur_frame>=mframe){
-			if(looped) icur_frame=0;
-			else isplaying=false;
+		if(!isplaying){
+			icur_frame=0;
+			return;	
+		} 
+
+		if(reverse_looped){
+			if(!reverse){
+				if(icur_frame<mframe) icur_frame+=frame_vel;
+				if(icur_frame>=mframe){
+					reverse=true;
+					// icur_frame=mframe-1;
+				}
+			}else{
+				if(icur_frame>0) icur_frame-=frame_vel;
+				if(icur_frame<=0){
+					if(looped) reverse=false;
+					else isplaying=false;
+				}
+			}
+			// println((int)icur_frame);
+		}else{
+			if(icur_frame<mframe) icur_frame+=frame_vel;
+			if(icur_frame>=mframe){
+				if(looped) icur_frame=0;
+				else isplaying=false;
+			}	
 		}
+		// icur_frame=constrain(icur_frame,0,mframe-1);
 	}
 
 	public void play(){
-		icur_frame=0;
+		reset();
 		resume();
 	}
 	public void pause(){
@@ -3503,11 +4866,19 @@ class ImageSeq{
 	public void resume(){
 		isplaying=true;
 	}
+	public void reset(){
+		icur_frame=0;
+		reverse=false;
+		pause();
+	}
 	public void draw(PGraphics pg,float x,float y,PImage seq_img){
 		//pg.image(arr_img[icur_frame],x,y);
 		pg.image(seq_img,x,y);
 	}
 
+	public int getFrame(){
+		return (int)constrain(icur_frame,0,mframe-1);
+	}
 
 }
 
@@ -3516,7 +4887,8 @@ class ImageSeq{
 
 
 // final String SERVER_IP="210.65.11.248:5055";
-final String SERVER_IP="192.168.2.226:5055";
+final String SERVER_IP="192.168.2.227:5055";
+final String SERVER_NAME="STGameA";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
@@ -3566,7 +4938,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	}
 	public boolean connect(){
 		this.loadBalancingPeer=new LoadBalancingPeer(this,ConnectionProtocol.Udp);
-		if(this.loadBalancingPeer.connect(SERVER_IP, "STGameB")){
+		if(this.loadBalancingPeer.connect(SERVER_IP, SERVER_NAME)){
 			return true;
 		}
 		return false;
@@ -3589,6 +4961,27 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LScore.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
     }
+    public void sendScoreEvent(int score1,int score2,int icar1,int icar2){
+
+
+        println("--------- Send Score : "+score1+" / "+score2+" ----------");
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
+        eventContent.put((byte)1, score1);              
+        eventContent.put((byte)2, score2);              
+        eventContent.put((byte)3, icar1);
+        eventContent.put((byte)4, icar2);
+
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LScore.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    public void sendStartRunEvent(){
+
+
+        println("--------- Send Start Run -----------");
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
+        
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    
     @Override
     public void onStatusChanged(StatusCode statusCode){
         super.onStatusChanged(statusCode);
