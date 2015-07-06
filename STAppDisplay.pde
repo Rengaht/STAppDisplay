@@ -36,7 +36,7 @@ PShader shd_rmv_bg;
 
 void setup(){
 
-	size(4080,560,P3D);
+	size(3056,560,P3D);
 	gapplet=this;
 
 	
@@ -58,8 +58,8 @@ void setup(){
 
 	agame_scene=new GameScene[MGAME];
 	agame_scene[0]=new AGameScene();
-	// agame_scene[1]=new BGameScene();
-	// agame_scene[2]=new CGameScene();
+	agame_scene[1]=new BGameScene();
+	agame_scene[2]=new CGameScene();
 
 	// for(GameScene game_scene:agame_scene) game_scene.Init();
 
@@ -67,7 +67,7 @@ void setup(){
 	font=loadFont("GameOver_Font.vlw");
 	textFont(font, 40);
 	
-	name_font=loadFont("MicrosoftMHei-Bold-18.vlw");
+	name_font=loadFont("MicrosoftMHei-Bold-22.vlw");
 	// textFont(name_font);
 
 	shd_rmv_bg=loadShader("Rmv_Black.glsl");
@@ -76,7 +76,7 @@ void setup(){
 
 	background(0);
 	
-	drawIlandText("");
+	
 }
 
 
@@ -209,25 +209,30 @@ void keyPressed(){
 }
 
 
-String drawIlandText(String build_name){
+String drawIlandText(String build_name,int left_right){
 	
 	if(build_name==null) return null;
 
 	// println("Draw Iland Text "+build_name);
-	PGraphics pg_text=createGraphics(200,52,P3D);
+	PGraphics pg_text=createGraphics(120,52,P3D);
 	pg_text.beginDraw();
 		pg_text.translate(pg_text.width/2,pg_text.height/2);
-		pg_text.scale(1,2);
-		pg_text.background(0,0);
-		pg_text.textFont(name_font);
-		pg_text.textSize(18);
+		pg_text.textFont(name_font,22);
 		pg_text.textAlign(CENTER,CENTER);
+		
+		float twid=pg_text.textWidth(build_name);
+		float tscale=(twid<120)?1:120/twid;
+		pg_text.scale(tscale,2.2);
+
+		pg_text.background(0,0);
 		pg_text.fill(255);
 
 		pg_text.text(build_name,0,0);
 		for(int i=0;i<2;++i) pg_text.filter(DILATE);
 
-		pg_text.fill(65,103,177);
+		if(left_right==1) pg_text.fill(65,103,177);
+		else pg_text.fill(239,74,82);
+
 		pg_text.text(build_name,0,0);
 
 		// pg_text.shader(shd_rmv_bg);
@@ -242,7 +247,7 @@ String drawIlandText(String build_name){
 	pg_text.endDraw();
 
 
-	String file_name="tag_name_"+nf(frameCount,5)+".png";
+	String file_name="tag_name_"+nf(frameCount,5)+"_"+nf((int)random(1000),4)+".png";
 	pg_text.save(file_name);
 	// saveStrings("tag_str_"+nf(frameCount,5),new String[]{build_name});
 	return file_name;

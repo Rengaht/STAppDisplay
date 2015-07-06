@@ -5,7 +5,7 @@ import java.util.TimerTask;
 
 // final String SERVER_IP="210.65.11.248:5055";
 final String SERVER_IP="192.168.2.227:5055";
-final String SERVER_NAME="STGameA";
+final String SERVER_NAME="STGameB";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	

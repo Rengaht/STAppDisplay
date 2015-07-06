@@ -1,5 +1,7 @@
 class AIsland{
-	
+
+	final int ORDER_PART[]={0,1,3,2,4,5};
+
 	float _pscale;
 	PVector _pos;
 	PVector move_amp,move_vel,move_phi;
@@ -109,7 +111,7 @@ class AIsland{
 	}
 	void setBuilding(int b1,int p1,int p2,int p3,int p4){
 
-		arr_build_part[0]=new ABuildPart(b1,0,0); // cat1
+		arr_build_part[0]=new ABuildPart(b1,0,0);  // build
 		arr_build_part[1]=new ABuildPart(b1,1,p1); // cat1
 		arr_build_part[2]=new ABuildPart(b1,2,p2); // cat2
 		arr_build_part[3]=new ABuildPart(b1,3,p3); // cat3
@@ -260,7 +262,9 @@ class AIsland{
 
 			float tport=ani_house_born.GetPortion();
 
-			for(int i=1;i<6;++i){
+			for(int x=0;x<5;++x){
+				int i=ORDER_PART[x]+1;
+
 				if(img_part[i]!=null){
 					if(arr_build_part[i-1].is_light && !cat3_light_on) continue; 
 					// pg.image(img_part[i],0,0);
@@ -386,7 +390,8 @@ class AIsland{
 			case 1:	//cat-3
 				if(arr_build_part[3].ipart>1) arr_build_part[3].start();
 				else cat3_light_on=!cat3_light_on;
-				if(!cat3_light_on) addScore(25,true);
+				// if(!cat3_light_on) 
+				addScore(25,true);
 				break;
 			case 2: // rain
 				if(rain_group!=null){

@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.util.Collection; 
 import processing.video.*; 
 import java.util.UUID; 
+import java.util.concurrent.ConcurrentHashMap; 
 import org.apache.commons.codec.binary.Base64; 
 import java.io.File; 
 import java.nio.file.Files; 
@@ -208,7 +209,7 @@ PShader shd_rmv_bg;
 
 public void setup(){
 
-	size(4080,560,P3D);
+	size(3056,560,P3D);
 	gapplet=this;
 
 	
@@ -230,8 +231,8 @@ public void setup(){
 
 	agame_scene=new GameScene[MGAME];
 	agame_scene[0]=new AGameScene();
-	// agame_scene[1]=new BGameScene();
-	// agame_scene[2]=new CGameScene();
+	agame_scene[1]=new BGameScene();
+	agame_scene[2]=new CGameScene();
 
 	// for(GameScene game_scene:agame_scene) game_scene.Init();
 
@@ -239,7 +240,7 @@ public void setup(){
 	font=loadFont("GameOver_Font.vlw");
 	textFont(font, 40);
 	
-	name_font=loadFont("MicrosoftMHei-Bold-18.vlw");
+	name_font=loadFont("MicrosoftMHei-Bold-22.vlw");
 	// textFont(name_font);
 
 	shd_rmv_bg=loadShader("Rmv_Black.glsl");
@@ -248,7 +249,7 @@ public void setup(){
 
 	background(0);
 	
-	drawIlandText("");
+	
 }
 
 
@@ -381,25 +382,30 @@ public void keyPressed(){
 }
 
 
-public String drawIlandText(String build_name){
+public String drawIlandText(String build_name,int left_right){
 	
 	if(build_name==null) return null;
 
 	// println("Draw Iland Text "+build_name);
-	PGraphics pg_text=createGraphics(200,52,P3D);
+	PGraphics pg_text=createGraphics(120,52,P3D);
 	pg_text.beginDraw();
 		pg_text.translate(pg_text.width/2,pg_text.height/2);
-		pg_text.scale(1,2);
-		pg_text.background(0,0);
-		pg_text.textFont(name_font);
-		pg_text.textSize(18);
+		pg_text.textFont(name_font,22);
 		pg_text.textAlign(CENTER,CENTER);
+		
+		float twid=pg_text.textWidth(build_name);
+		float tscale=(twid<120)?1:120/twid;
+		pg_text.scale(tscale,2.2f);
+
+		pg_text.background(0,0);
 		pg_text.fill(255);
 
 		pg_text.text(build_name,0,0);
 		for(int i=0;i<2;++i) pg_text.filter(DILATE);
 
-		pg_text.fill(65,103,177);
+		if(left_right==1) pg_text.fill(65,103,177);
+		else pg_text.fill(239,74,82);
+
 		pg_text.text(build_name,0,0);
 
 		// pg_text.shader(shd_rmv_bg);
@@ -414,7 +420,7 @@ public String drawIlandText(String build_name){
 	pg_text.endDraw();
 
 
-	String file_name="tag_name_"+nf(frameCount,5)+".png";
+	String file_name="tag_name_"+nf(frameCount,5)+"_"+nf((int)random(1000),4)+".png";
 	pg_text.save(file_name);
 	// saveStrings("tag_str_"+nf(frameCount,5),new String[]{build_name});
 	return file_name;
@@ -593,8 +599,8 @@ class AGameScene extends GameScene{
 	final int IBUILD_PART=4;
 
 	int mhouse=9;
-	HashMap<String,AIsland> map_left_island;
-	HashMap<String,AIsland> map_right_island;
+	ConcurrentHashMap<String,AIsland> map_left_island;
+	ConcurrentHashMap<String,AIsland> map_right_island;
 
 	int mray=100;
 	
@@ -684,8 +690,8 @@ class AGameScene extends GameScene{
 		img_island=loadImage(DataFolder+"BG/land1.png");
 		img_spaceship=loadImage(DataFolder+"BG/airship.png");
 
-		map_left_island=new HashMap<String,AIsland>();
-		map_right_island=new HashMap<String,AIsland>();
+		map_left_island=new ConcurrentHashMap<String,AIsland>();
+		map_right_island=new ConcurrentHashMap<String,AIsland>();
 
 
 
@@ -713,8 +719,8 @@ class AGameScene extends GameScene{
 
 		img_star=loadImage(DataFolder+"BG/star.png");
 		arr_star=new ArrayList<AStar>();
-		int mstar=8;
-		for(int i=0;i<mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i*random(.7f,1.3f),-20));
+		int mstar=12;
+		for(int i=0;i<=mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i,-20));
 
 	}
 	private String getBuildPartFileName(int ibuild,int icat,int ipart,int iframe){
@@ -772,7 +778,7 @@ class AGameScene extends GameScene{
 			iland.update();
 			arr_acc_score[0]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
-				String file_name=drawIlandText(iland.build_name);
+				String file_name=drawIlandText(iland.build_name,1);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
 			}
 		}
@@ -781,7 +787,7 @@ class AGameScene extends GameScene{
 			iland.update();
 			arr_acc_score[1]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
-				String file_name=drawIlandText(iland.build_name);
+				String file_name=drawIlandText(iland.build_name,0);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
 			}
 		}
@@ -940,6 +946,7 @@ class AGameScene extends GameScene{
 		return iland;
 	}
 	public void addDefaultHouse(){
+
 		for(int i=0;i<MISLAND;++i){
 			addNewHouse("default_left_"+i,1,true);
 			addNewHouse("default_right_"+i,0,true);
@@ -950,43 +957,45 @@ class AGameScene extends GameScene{
 		int i=-1;
 		if(left_right==1){
 			
-			boolean success=false;
-			String key_rmv=null;
-			AIsland iland=null;
+			// synchronized(map_left_island){			
 
-			if(map_left_island.containsKey(user_id)){
-				success=true;
-				key_rmv=user_id;
-				iland=map_left_island.get(key_rmv);
-			}else{
-				for(String ikey:map_left_island.keySet()){
-					iland=map_left_island.get(ikey);
-					if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
-						success=true;
-						key_rmv=ikey;
+				boolean success=false;
+				String key_rmv=null;
+				AIsland iland=null;
+
+				if(map_left_island.containsKey(user_id)){
+					success=true;
+					key_rmv=user_id;
+					iland=map_left_island.get(key_rmv);
+				}else{
+					for(String ikey:map_left_island.keySet()){
+						iland=map_left_island.get(ikey);
+						if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
+							success=true;
+							key_rmv=ikey;
+						}
 					}
 				}
-			}
-			if(success){
-				map_left_island.remove(key_rmv);	
-				map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
+				if(success){
+					map_left_island.remove(key_rmv);	
+					map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
 
-				println("Remove: "+key_rmv);
-			}else{
-				if(is_default){
-					i=map_left_island.size();
-					map_left_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
-				}else println("NO PLACE TO ADD A NEW HOUSE");
-			}
+					println("Remove: "+key_rmv);
+				}else{
+					if(is_default){
+						i=map_left_island.size();
+						map_left_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
+					}else println("NO PLACE TO ADD A NEW HOUSE");
+				}
 
-
+			// }
 			// i=map_left_island.size();
 			// if(i<MISLAND) map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
 			// else println("NO PLACE TO ADD A NEW HOUSE");
 
 
 		}else if(left_right==0){
-			
+				
 			boolean success=false;
 			String key_rmv=null;
 			AIsland iland=null;
@@ -1188,7 +1197,9 @@ class AGameScene extends GameScene{
 }
 
 class AIsland{
-	
+
+	final int ORDER_PART[]={0,1,3,2,4,5};
+
 	float _pscale;
 	PVector _pos;
 	PVector move_amp,move_vel,move_phi;
@@ -1298,7 +1309,7 @@ class AIsland{
 	}
 	public void setBuilding(int b1,int p1,int p2,int p3,int p4){
 
-		arr_build_part[0]=new ABuildPart(b1,0,0); // cat1
+		arr_build_part[0]=new ABuildPart(b1,0,0);  // build
 		arr_build_part[1]=new ABuildPart(b1,1,p1); // cat1
 		arr_build_part[2]=new ABuildPart(b1,2,p2); // cat2
 		arr_build_part[3]=new ABuildPart(b1,3,p3); // cat3
@@ -1449,7 +1460,9 @@ class AIsland{
 
 			float tport=ani_house_born.GetPortion();
 
-			for(int i=1;i<6;++i){
+			for(int x=0;x<5;++x){
+				int i=ORDER_PART[x]+1;
+
 				if(img_part[i]!=null){
 					if(arr_build_part[i-1].is_light && !cat3_light_on) continue; 
 					// pg.image(img_part[i],0,0);
@@ -1575,7 +1588,8 @@ class AIsland{
 			case 1:	//cat-3
 				if(arr_build_part[3].ipart>1) arr_build_part[3].start();
 				else cat3_light_on=!cat3_light_on;
-				if(!cat3_light_on) addScore(25,true);
+				// if(!cat3_light_on) 
+				addScore(25,true);
 				break;
 			case 2: // rain
 				if(rain_group!=null){
@@ -1674,7 +1688,7 @@ class ABuildPart{
 
 
 final float RAIN_THRES=350;
-final float RAIN_TIME=120;
+final float RAIN_TIME=500;
 
 class ARayLine{
 	float x,y,len;
@@ -2323,6 +2337,7 @@ class BGameScene extends GameScene{
 	PImage[] arr_img_fighting;
 	PImage[] arr_img_winlose;
 
+	IconGen[] arr_icon_gen;
 	IconLine[] arr_icon_line;
 
 	Timer timer_sleep;
@@ -2425,6 +2440,10 @@ class BGameScene extends GameScene{
 		arr_icon_line[4]=new IconLine((int)random(ITRANSCAR),0);
 		arr_icon_line[5]=new IconLine((int)random(ITRANSCAR),1);
 		
+		arr_icon_gen=new IconGen[3];
+		arr_icon_gen[0]=new IconGen(arr_icon_line[0],arr_icon_line[3]);
+		arr_icon_gen[1]=new IconGen(arr_icon_line[1],arr_icon_line[4]);
+		arr_icon_gen[2]=new IconGen(arr_icon_line[2],arr_icon_line[5]);
 
 	}
 	public @Override
@@ -2489,7 +2508,7 @@ class BGameScene extends GameScene{
 				if(random(50)<1) arr_car[1].updatePosition((int)random(-2,2));
 			}
 
-
+			for(IconGen icgen:arr_icon_gen) icgen.update();
 			for(IconLine icon:arr_icon_line) icon.update();
 
 			for(int i=0;i<3;++i){
@@ -2838,10 +2857,12 @@ class BGameScene extends GameScene{
 		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
 		for(IconLine icon:arr_icon_line) icon.restart();
 
-		
+		for(IconGen icgen:arr_icon_gen) icgen.restart();
 		mov_road_right.play();
 
 		mov_road_left.play();		
+
+		println("Road Length= "+mov_road_left.duration());
 
 	}
 	public void endRound(){
@@ -3768,7 +3789,7 @@ class CountDown{
 
 final float ROAD_MOV_SPEED=1;
 final float CAR_BASE_VEL=1;
-final float CAR_DEST_DIST=60;
+final float CAR_DEST_DIST=80;
 
 class EnergyCar{
 	
@@ -4541,7 +4562,7 @@ class GameScene{
 	
 	final int[] Left_Screen_Rect={0,0,1024,384};
 	final int[] Center_Screen_Rect={1024,0,2032,176};
-	final int[] Right_Screen_Rect={3056,0,1024,384};
+	final int[] Right_Screen_Rect={2032,176,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -4668,7 +4689,7 @@ class GameScene{
 class IconLine{
 	
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=120;
+	// final float ICON_DELAY=120;
 	
 	float pos_x;
 
@@ -4701,8 +4722,10 @@ class IconLine{
 	}
 
 	public void restart(){
+		
 		ani_icon.Restart();
-		ani_icon.Pause();
+		ani_icon.Pause();	
+		
 		//ani_explode.Reset();
 		is_playing=true;
 	}
@@ -4715,15 +4738,19 @@ class IconLine{
 		
 
 		ani_icon.Update();
-		
+
+
 		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
-			ani_icon.setDelay(ICON_DELAY*random(1,3));
-			ani_icon.Restart();
-			icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+			ani_icon.Reset();
 			ani_explode.Reset();
-			// ani_text.Reset();
-			is_explode=false;
 		}
+		// 	ani_icon.setDelay(ICON_DELAY*random(1,3));
+		// 	ani_icon.Restart();
+		// 	icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		// 	ani_explode.Reset();
+		// 	// ani_text.Reset();
+		// 	is_explode=false;
+		// }
 		
 		ani_explode.Update();
 		ani_text.Update();
@@ -4734,6 +4761,7 @@ class IconLine{
 		//shd_explode.set("trans_t",ani_explode.GetPortion());
 		shd_explode.set("sampleDist",.2f+ani_icon.GetPortion());
 		shd_explode.set("sampleStrength",2+2*ani_icon.GetPortion());
+
 	}
 	public boolean isRunning(){
 		return ani_icon.ani_start;
@@ -4749,20 +4777,35 @@ class IconLine{
 			
 			is_explode=true;	
 
-			
 			// if(set_text!=null){
 			// 	img_icontext=set_text;
 			// 	ani_text.Restart();
 			// }
 		} 
 	}
+	public void addNewIcon(int set_index,float set_delay){
+
+		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
+
+			// if(ani_icon==null) ani_icon=new FrameAnimation(set_duration);
+
+			ani_icon.setDelay(set_delay);
+			ani_icon.Restart();
+			icon_index=set_index;
+			ani_explode.Reset();
+			// ani_text.Reset();
+			is_explode=false;
+		}
+
+	}
+
 
 	public void draw(PGraphics pg,PImage img_icon){
 
 		float _pos=ani_icon.GetPortion();
 		if(_pos>1 || _pos<=0) return;
 
-		
+
 
 		pg.pushStyle();
 		pg.imageMode(CENTER);
@@ -4797,6 +4840,43 @@ class IconLine{
 
 		pg.popStyle();
 	}
+
+}
+
+
+class IconGen{
+	final float ICON_SPAN=60;
+	final float ICON_DELAY=240;
+
+	FrameAnimation ani_gen;
+	IconLine[] arr_icon_line;
+
+	IconGen(IconLine icline_1,IconLine icline_2){
+		ani_gen=new FrameAnimation(ICON_SPAN+ICON_DELAY);
+		
+		arr_icon_line=new IconLine[2];
+		arr_icon_line[0]=icline_1;
+		arr_icon_line[1]=icline_2;
+		
+		addToIconLine(0);
+	}
+	public void restart(){
+		ani_gen.Restart();
+	}
+	public void update(){
+		ani_gen.Update();
+		if(!ani_gen.ani_start){
+
+			addToIconLine(random(ICON_DELAY*random(.3f,1)));
+			ani_gen.Restart();
+		}
+	}
+	public void addToIconLine(float new_delay){
+		println("ADD TO ICON LINE!");
+		int new_ic=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		for(IconLine icline:arr_icon_line) icline.addNewIcon(new_ic,new_delay);
+	}
+
 
 }
 class ImageSeq{
@@ -4888,7 +4968,7 @@ class ImageSeq{
 
 // final String SERVER_IP="210.65.11.248:5055";
 final String SERVER_IP="192.168.2.227:5055";
-final String SERVER_NAME="STGameA";
+final String SERVER_NAME="STGameB";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	

@@ -31,6 +31,7 @@ class BGameScene extends GameScene{
 	PImage[] arr_img_fighting;
 	PImage[] arr_img_winlose;
 
+	IconGen[] arr_icon_gen;
 	IconLine[] arr_icon_line;
 
 	Timer timer_sleep;
@@ -133,6 +134,10 @@ class BGameScene extends GameScene{
 		arr_icon_line[4]=new IconLine((int)random(ITRANSCAR),0);
 		arr_icon_line[5]=new IconLine((int)random(ITRANSCAR),1);
 		
+		arr_icon_gen=new IconGen[3];
+		arr_icon_gen[0]=new IconGen(arr_icon_line[0],arr_icon_line[3]);
+		arr_icon_gen[1]=new IconGen(arr_icon_line[1],arr_icon_line[4]);
+		arr_icon_gen[2]=new IconGen(arr_icon_line[2],arr_icon_line[5]);
 
 	}
 	@Override
@@ -197,7 +202,7 @@ class BGameScene extends GameScene{
 				if(random(50)<1) arr_car[1].updatePosition((int)random(-2,2));
 			}
 
-
+			for(IconGen icgen:arr_icon_gen) icgen.update();
 			for(IconLine icon:arr_icon_line) icon.update();
 
 			for(int i=0;i<3;++i){
@@ -546,10 +551,12 @@ class BGameScene extends GameScene{
 		for(int i=0;i<mcur_player;++i) arr_car[i].startRun();
 		for(IconLine icon:arr_icon_line) icon.restart();
 
-		
+		for(IconGen icgen:arr_icon_gen) icgen.restart();
 		mov_road_right.play();
 
 		mov_road_left.play();		
+
+		println("Road Length= "+mov_road_left.duration());
 
 	}
 	void endRound(){

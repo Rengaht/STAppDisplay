@@ -1,5 +1,5 @@
 import java.util.UUID;
-
+import java.util.concurrent.ConcurrentHashMap;
 
 class AGameScene extends GameScene{
 
@@ -11,8 +11,8 @@ class AGameScene extends GameScene{
 	final int IBUILD_PART=4;
 
 	int mhouse=9;
-	HashMap<String,AIsland> map_left_island;
-	HashMap<String,AIsland> map_right_island;
+	ConcurrentHashMap<String,AIsland> map_left_island;
+	ConcurrentHashMap<String,AIsland> map_right_island;
 
 	int mray=100;
 	
@@ -102,8 +102,8 @@ class AGameScene extends GameScene{
 		img_island=loadImage(DataFolder+"BG/land1.png");
 		img_spaceship=loadImage(DataFolder+"BG/airship.png");
 
-		map_left_island=new HashMap<String,AIsland>();
-		map_right_island=new HashMap<String,AIsland>();
+		map_left_island=new ConcurrentHashMap<String,AIsland>();
+		map_right_island=new ConcurrentHashMap<String,AIsland>();
 
 
 
@@ -131,8 +131,8 @@ class AGameScene extends GameScene{
 
 		img_star=loadImage(DataFolder+"BG/star.png");
 		arr_star=new ArrayList<AStar>();
-		int mstar=8;
-		for(int i=0;i<mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i*random(.7,1.3),-20));
+		int mstar=12;
+		for(int i=0;i<=mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i,-20));
 
 	}
 	private String getBuildPartFileName(int ibuild,int icat,int ipart,int iframe){
@@ -190,7 +190,7 @@ class AGameScene extends GameScene{
 			iland.update();
 			arr_acc_score[0]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
-				String file_name=drawIlandText(iland.build_name);
+				String file_name=drawIlandText(iland.build_name,1);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
 			}
 		}
@@ -199,7 +199,7 @@ class AGameScene extends GameScene{
 			iland.update();
 			arr_acc_score[1]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
-				String file_name=drawIlandText(iland.build_name);
+				String file_name=drawIlandText(iland.build_name,0);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
 			}
 		}
@@ -358,6 +358,7 @@ class AGameScene extends GameScene{
 		return iland;
 	}
 	void addDefaultHouse(){
+
 		for(int i=0;i<MISLAND;++i){
 			addNewHouse("default_left_"+i,1,true);
 			addNewHouse("default_right_"+i,0,true);
@@ -368,43 +369,45 @@ class AGameScene extends GameScene{
 		int i=-1;
 		if(left_right==1){
 			
-			boolean success=false;
-			String key_rmv=null;
-			AIsland iland=null;
+			// synchronized(map_left_island){			
 
-			if(map_left_island.containsKey(user_id)){
-				success=true;
-				key_rmv=user_id;
-				iland=map_left_island.get(key_rmv);
-			}else{
-				for(String ikey:map_left_island.keySet()){
-					iland=map_left_island.get(ikey);
-					if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
-						success=true;
-						key_rmv=ikey;
+				boolean success=false;
+				String key_rmv=null;
+				AIsland iland=null;
+
+				if(map_left_island.containsKey(user_id)){
+					success=true;
+					key_rmv=user_id;
+					iland=map_left_island.get(key_rmv);
+				}else{
+					for(String ikey:map_left_island.keySet()){
+						iland=map_left_island.get(ikey);
+						if(!ikey.equals(user_id) && iland.istage==AIslandAction.DEAD){
+							success=true;
+							key_rmv=ikey;
+						}
 					}
 				}
-			}
-			if(success){
-				map_left_island.remove(key_rmv);	
-				map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
+				if(success){
+					map_left_island.remove(key_rmv);	
+					map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
 
-				println("Remove: "+key_rmv);
-			}else{
-				if(is_default){
-					i=map_left_island.size();
-					map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
-				}else println("NO PLACE TO ADD A NEW HOUSE");
-			}
+					println("Remove: "+key_rmv);
+				}else{
+					if(is_default){
+						i=map_left_island.size();
+						map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
+					}else println("NO PLACE TO ADD A NEW HOUSE");
+				}
 
-
+			// }
 			// i=map_left_island.size();
 			// if(i<MISLAND) map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,is_default));
 			// else println("NO PLACE TO ADD A NEW HOUSE");
 
 
 		}else if(left_right==0){
-			
+				
 			boolean success=false;
 			String key_rmv=null;
 			AIsland iland=null;

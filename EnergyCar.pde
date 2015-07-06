@@ -1,7 +1,7 @@
 
 final float ROAD_MOV_SPEED=1;
 final float CAR_BASE_VEL=1;
-final float CAR_DEST_DIST=60;
+final float CAR_DEST_DIST=80;
 
 class EnergyCar{
 	

@@ -3,7 +3,7 @@
 class IconLine{
 	
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=120;
+	// final float ICON_DELAY=120;
 	
 	float pos_x;
 
@@ -36,8 +36,10 @@ class IconLine{
 	}
 
 	void restart(){
+		
 		ani_icon.Restart();
-		ani_icon.Pause();
+		ani_icon.Pause();	
+		
 		//ani_explode.Reset();
 		is_playing=true;
 	}
@@ -50,15 +52,19 @@ class IconLine{
 		
 
 		ani_icon.Update();
-		
+
+
 		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
-			ani_icon.setDelay(ICON_DELAY*random(1,3));
-			ani_icon.Restart();
-			icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+			ani_icon.Reset();
 			ani_explode.Reset();
-			// ani_text.Reset();
-			is_explode=false;
 		}
+		// 	ani_icon.setDelay(ICON_DELAY*random(1,3));
+		// 	ani_icon.Restart();
+		// 	icon_index=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		// 	ani_explode.Reset();
+		// 	// ani_text.Reset();
+		// 	is_explode=false;
+		// }
 		
 		ani_explode.Update();
 		ani_text.Update();
@@ -69,6 +75,7 @@ class IconLine{
 		//shd_explode.set("trans_t",ani_explode.GetPortion());
 		shd_explode.set("sampleDist",.2+ani_icon.GetPortion());
 		shd_explode.set("sampleStrength",2+2*ani_icon.GetPortion());
+
 	}
 	boolean isRunning(){
 		return ani_icon.ani_start;
@@ -84,20 +91,35 @@ class IconLine{
 			
 			is_explode=true;	
 
-			
 			// if(set_text!=null){
 			// 	img_icontext=set_text;
 			// 	ani_text.Restart();
 			// }
 		} 
 	}
+	void addNewIcon(int set_index,float set_delay){
+
+		if(is_playing && !ani_icon.ani_start && !ani_explode.ani_start){
+
+			// if(ani_icon==null) ani_icon=new FrameAnimation(set_duration);
+
+			ani_icon.setDelay(set_delay);
+			ani_icon.Restart();
+			icon_index=set_index;
+			ani_explode.Reset();
+			// ani_text.Reset();
+			is_explode=false;
+		}
+
+	}
+
 
 	void draw(PGraphics pg,PImage img_icon){
 
 		float _pos=ani_icon.GetPortion();
 		if(_pos>1 || _pos<=0) return;
 
-		
+
 
 		pg.pushStyle();
 		pg.imageMode(CENTER);
@@ -132,5 +154,42 @@ class IconLine{
 
 		pg.popStyle();
 	}
+
+}
+
+
+class IconGen{
+	final float ICON_SPAN=60;
+	final float ICON_DELAY=240;
+
+	FrameAnimation ani_gen;
+	IconLine[] arr_icon_line;
+
+	IconGen(IconLine icline_1,IconLine icline_2){
+		ani_gen=new FrameAnimation(ICON_SPAN+ICON_DELAY);
+		
+		arr_icon_line=new IconLine[2];
+		arr_icon_line[0]=icline_1;
+		arr_icon_line[1]=icline_2;
+		
+		addToIconLine(0);
+	}
+	void restart(){
+		ani_gen.Restart();
+	}
+	void update(){
+		ani_gen.Update();
+		if(!ani_gen.ani_start){
+
+			addToIconLine(random(ICON_DELAY*random(.3,1)));
+			ani_gen.Restart();
+		}
+	}
+	void addToIconLine(float new_delay){
+		println("ADD TO ICON LINE!");
+		int new_ic=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		for(IconLine icline:arr_icon_line) icline.addNewIcon(new_ic,new_delay);
+	}
+
 
 }

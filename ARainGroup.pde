@@ -1,6 +1,6 @@
 
 final float RAIN_THRES=350;
-final float RAIN_TIME=120;
+final float RAIN_TIME=500;
 
 class ARayLine{
 	float x,y,len;

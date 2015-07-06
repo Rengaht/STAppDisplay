@@ -2,7 +2,7 @@ class GameScene{
 	
 	final int[] Left_Screen_Rect={0,0,1024,384};
 	final int[] Center_Screen_Rect={1024,0,2032,176};
-	final int[] Right_Screen_Rect={3056,0,1024,384};
+	final int[] Right_Screen_Rect={2032,176,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
