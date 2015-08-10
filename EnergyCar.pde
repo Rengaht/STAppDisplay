@@ -269,6 +269,7 @@ class EnergyCar{
 		else{
 			// dest_vel=.6*ROAD_MOV_SPEED;
 			dest_vel=cur_vel-0.4*ROAD_MOV_SPEED;
+			dest_vel=constrain(dest_vel,ROAD_MOV_SPEED*.6,ROAD_MOV_SPEED*3);
 			ani_car_transform.Restart();
 			ani_icon_timer.Restart();	
 			is_bump_transform=true;

@@ -38,7 +38,7 @@ class ACloud{
 		}else{
 			pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
 		}
-		pg.scale(_pscale);
+		pg.scale(_pscale*(icloud==2?1.3:1));
 			pg.image(img_cloud,0,0);
 		pg.popMatrix();
 
@@ -148,6 +148,52 @@ class AStar{
 		
 		pg.scale(_pscale);			
 			pg.image(img_star,0,0);
+		pg.popMatrix();
+
+		pg.popStyle();
+
+
+
+	}
+
+
+}
+
+class ASpaceBalloon{
+	float _posx,_posy,_pscale;
+	PVector move_amp;//
+	PVector move_vel,move_phi;
+	float move_delay;
+	int bindex=(int)random(4);
+	ASpaceBalloon(float set_posx,float set_posy){
+		
+		_posx=set_posx;
+		_posy=set_posy;
+
+		_pscale=random(.75,1);	
+				
+		move_amp=new PVector(random(4,10),set_posy+100);
+		move_vel=new PVector(random(10,30),random(450,600));
+		
+		move_phi=new PVector(random(TWO_PI),random(TWO_PI));
+		
+		move_delay=random(move_vel.x);
+	}
+	void draw(PGraphics pg,PImage img_balloon){
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		pg.textureMode(NORMAL);
+		pg.noStroke();
+
+		pg.pushMatrix();
+
+		float up_t=(((float)frameCount+move_phi.y)%move_vel.y)/move_vel.y;
+		if(up_t<.005) bindex=(int)random(4);
+
+		pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy-move_amp.y*sin(up_t*HALF_PI));
+		
+		pg.scale(_pscale);			
+			pg.image(img_balloon,0,0);
 		pg.popMatrix();
 
 		pg.popStyle();

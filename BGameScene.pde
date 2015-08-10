@@ -139,6 +139,10 @@ class BGameScene extends GameScene{
 		arr_icon_gen[1]=new IconGen(arr_icon_line[1],arr_icon_line[4]);
 		arr_icon_gen[2]=new IconGen(arr_icon_line[2],arr_icon_line[5]);
 
+
+		img_qrcode_title=loadImage("APP_TITLE_02.png");
+
+
 	}
 	@Override
 	void Init(){
@@ -212,7 +216,10 @@ class BGameScene extends GameScene{
 					if(abs(_icon.pos_x-arr_car[0].getCurPosition())<.1){
 						PImage _icontext=(_icon.icon_index<ITRANSCAR)?arr_img_icontext.get(_icon.icon_index):null;
 						arr_car[0].changeCar(_icon.icon_index,_icontext);
-						_icon.startExplode(_icontext);								
+						_icon.startExplode(_icontext);	
+
+						// send eat_icon
+						photon_client.sendEatIconEvent(1,(_icon.icon_index<ITRANSCAR)?1:2);
 					} 
 				}
 			}
@@ -225,6 +232,10 @@ class BGameScene extends GameScene{
 						PImage _icontext=(_icon.icon_index<ITRANSCAR)?arr_img_icontext.get(_icon.icon_index):null;
 						arr_car[1].changeCar(_icon.icon_index,_icontext);
 						_icon.startExplode(_icontext);								
+
+						// send eat_icon
+						photon_client.sendEatIconEvent(0,(_icon.icon_index<ITRANSCAR)?1:2);
+
 					} 
 				}
 			}
@@ -467,6 +478,8 @@ class BGameScene extends GameScene{
 		
 		switch(event_code){
 			case Server_Game_Start:
+
+
 				mcur_player=(Integer)params.get((byte)201);
 				arr_car[0].user_id=(String)params.get((byte)100);
 				if(mcur_player==2) arr_car[1].user_id=(String)params.get((byte)200);
@@ -539,6 +552,8 @@ class BGameScene extends GameScene{
 		println("CAR_DEST_DIST= "+CAR_DEST_DIST);
 
 		mov_road_loop.stop();
+
+		show_qrcode=false;
 
 		if(OFFLINE) startRoad();
 	}

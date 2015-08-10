@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Iterator; 
 import java.lang.reflect.Field; 
 import java.util.Collection; 
+import java.util.Calendar; 
 import processing.video.*; 
 import java.util.UUID; 
 import java.util.concurrent.ConcurrentHashMap; 
@@ -184,10 +185,11 @@ public class STAppDisplay extends PApplet {
 
 
 
-boolean DRAW_DEBUG=true;
+
+boolean DRAW_DEBUG=false;
 boolean OFFLINE=true;
 final int MGAME=3;
-final boolean GIRRAFE=false;
+boolean DO_EASTER_EGG=false;
 
 final int Left_Screen_X=1024;
 final int Right_Screen_X=3056;
@@ -199,17 +201,17 @@ int igame_scene=-1;
 GameScene[] agame_scene;
 boolean show_game_over=false;
 
-PFont font,name_font;
+PFont font,name_font,timer_font;
 PApplet gapplet;
 
-PImage img_qrcode_title,img_qrcode_android,img_qrcode_ios;
+PImage img_qrcode_android,img_qrcode_ios;
 
 PShader shd_rmv_bg;
 
 
 public void setup(){
 
-	size(3056,560,P3D);
+	size(2048,560,P3D);
 	gapplet=this;
 
 	
@@ -225,7 +227,7 @@ public void setup(){
 		ex.printStackTrace();
 	}
 	
-	img_qrcode_title=loadImage("APP_TITLE.png");
+	// img_qrcode_title=loadImage("APP_TITLE.png");
 	img_qrcode_android=loadImage("qr_android.png");
 	img_qrcode_ios=loadImage("qr_ios.png");
 
@@ -240,8 +242,8 @@ public void setup(){
 	font=loadFont("GameOver_Font.vlw");
 	textFont(font, 40);
 	
-	name_font=loadFont("MicrosoftMHei-Bold-22.vlw");
-	// textFont(name_font);
+	name_font=loadFont("Combined-Bold-22.vlw");
+	timer_font=loadFont("Timer_Font.vlw");
 
 	shd_rmv_bg=loadShader("Rmv_Black.glsl");
 	
@@ -259,7 +261,11 @@ public void draw(){
 
 	// if(mousePressed) photon_client.sendSomeEvent();
 
+	float scale_to_screen=1;//(float)displayWidth/4060.0;
 	
+	
+
+
 	boolean all_loaded=true;
 	for(int i=0;i<MGAME;++i){
 		if(agame_scene[i]!=null && !agame_scene[i].finish_load) all_loaded=false;
@@ -281,19 +287,27 @@ public void draw(){
 			String no_str="NO GAME";
 			for(int i=0;i<(frameCount/10)%5;++i) no_str+=".";
 			text(no_str,20,height/2+50);
+		
 			return;	
 		}
+
+		pushMatrix();
+		scale(scale_to_screen);
+
 		agame_scene[igame_scene].SUpdate();
 		agame_scene[igame_scene].Draw();
 		agame_scene[igame_scene].DrawOnGraph(this.g);
+
+		popMatrix();
 	}
 
 	
+	
+
 
 	frame.setTitle(String.valueOf(frameRate));
 
 	if(DRAW_DEBUG){
-
 		if(OFFLINE){
 			text("OFFLINE",1064,500);
 		}else{
@@ -301,8 +315,8 @@ public void draw(){
 		}
 	}
 
+	// if(mousePressed) saveFrame("STApp_cap_#####.png");
 
-	// text("\u5566\u5566\u5566\u5566\u8521\u4f73\u793d",20,20);
 }
 
 
@@ -376,7 +390,16 @@ public void keyPressed(){
 		case 't':
 			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerTurb();
 			break;
-					
+		case ENTER:
+			if(!OFFLINE) photon_client.sendSwitchGameEvent((igame_scene+1)%3);
+			break;
+		case 'n':
+			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerCat();
+			break;
+
+		case 'e':
+			DO_EASTER_EGG=!DO_EASTER_EGG;
+			break;
 	}
 
 }
@@ -403,8 +426,9 @@ public String drawIlandText(String build_name,int left_right){
 		pg_text.text(build_name,0,0);
 		for(int i=0;i<2;++i) pg_text.filter(DILATE);
 
-		if(left_right==1) pg_text.fill(65,103,177);
-		else pg_text.fill(239,74,82);
+		// if(left_right==1) pg_text.fill(65,103,177);
+		// else pg_text.fill(239,74,82);
+		pg_text.fill(0);
 
 		pg_text.text(build_name,0,0);
 
@@ -466,7 +490,7 @@ class ACloud{
 		}else{
 			pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
 		}
-		pg.scale(_pscale);
+		pg.scale(_pscale*(icloud==2?1.3f:1));
 			pg.image(img_cloud,0,0);
 		pg.popMatrix();
 
@@ -587,16 +611,72 @@ class AStar{
 
 }
 
+class ASpaceBalloon{
+	float _posx,_posy,_pscale;
+	PVector move_amp;//
+	PVector move_vel,move_phi;
+	float move_delay;
+	int bindex=(int)random(4);
+	ASpaceBalloon(float set_posx,float set_posy){
+		
+		_posx=set_posx;
+		_posy=set_posy;
 
+		_pscale=random(.75f,1);	
+				
+		move_amp=new PVector(random(4,10),set_posy+100);
+		move_vel=new PVector(random(10,30),random(450,600));
+		
+		move_phi=new PVector(random(TWO_PI),random(TWO_PI));
+		
+		move_delay=random(move_vel.x);
+	}
+	public void draw(PGraphics pg,PImage img_balloon){
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		pg.textureMode(NORMAL);
+		pg.noStroke();
+
+		pg.pushMatrix();
+
+		float up_t=(((float)frameCount+move_phi.y)%move_vel.y)/move_vel.y;
+		if(up_t<.005f) bindex=(int)random(4);
+
+		pg.translate(_posx+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_posy-move_amp.y*sin(up_t*HALF_PI));
+		
+		pg.scale(_pscale);			
+			pg.image(img_balloon,0,0);
+		pg.popMatrix();
+
+		pg.popStyle();
+
+
+
+	}
+
+
+}
+
+
+
+PImage[] arr_img_red_num,arr_img_blue_num;
 
 class AGameScene extends GameScene{
 
 	final String DataFolder="GAME_A/";
+	// final String CreatedFolder="F:/"
 	final int MCLOUD=10;
 	final int MISLAND=5;
-	final int IBUILD=5;
-	final int MBUILD_PART=4;
+	final int MBACK_GROUP=4; 
+	final int IBUILD=5; /* #kind of building */
+	final int MBUILD_PART=4; 
 	final int IBUILD_PART=4;
+	
+	final int ROUND_TIME=240000; //4:00
+	final int ROUND_BREAK_SPAN=5000;
+
+	final int BACKGOUNRD_SPAN_MIN=2; /* interval to change background */
+
 
 	int mhouse=9;
 	ConcurrentHashMap<String,AIsland> map_left_island;
@@ -604,11 +684,17 @@ class AGameScene extends GameScene{
 
 	int mray=100;
 	
+	int start_min=0;
+	int iback_group=0;
 	PImage[] arr_img_back;
+
 	PImage[] arr_img_cloud;
+	PImage[] arr_img_balloon;
+
+
 	PImage[] arr_img_people;
 	PImage img_island,img_spaceship,img_score;
-	PImage[] arr_img_red_num,arr_img_blue_num;
+	
 	ArrayList<ArrayList<ArrayList<PImage>>> arr_img_build_part;
 	PImage[] arr_img_winlose;
 	
@@ -618,9 +704,19 @@ class AGameScene extends GameScene{
 
 	ArrayList<ACloud> arr_left_acloud,arr_right_acloud;
 	ASpaceShip[] arr_space_ship;
-
+	ASpaceBalloon[] arr_space_ballon;
+	ACloud[] arr_thin_cloud;
 
 	int[] arr_acc_score;
+
+	ANeonCat aneoncat;
+
+	AScore[] arr_top_score;
+
+
+	int round_start_time;
+	boolean first_to_join;
+
 
 	public @Override
 	void loadFiles(){
@@ -662,14 +758,22 @@ class AGameScene extends GameScene{
 			arr_img_build_part.add(arr_build);
 		}
 
-		arr_img_back=new PImage[3];
-		arr_img_back[0]=loadImage(DataFolder+"BG/bg_left.png");
-		arr_img_back[1]=loadImage(DataFolder+"BG/bg_right.png");
-		arr_img_back[2]=loadImage(DataFolder+"BG/bg_center.png");
-			
-		arr_img_cloud=new PImage[2];
+		arr_img_back=new PImage[MBACK_GROUP*3];
+		for(int i=0;i<MBACK_GROUP;++i){
+			arr_img_back[i*3+0]=loadImage(DataFolder+"BG/bg_left-"+nf(i+1,1)+".png");
+			arr_img_back[i*3+1]=loadImage(DataFolder+"BG/bg_right-"+nf(i+1,1)+".png");
+			arr_img_back[i*3+2]=loadImage(DataFolder+"BG/bg_center-"+nf(i+1,1)+".png");
+		}
+		arr_img_cloud=new PImage[3];
 		arr_img_cloud[0]=loadImage(DataFolder+"BG/cloud01.png");
 		arr_img_cloud[1]=loadImage(DataFolder+"BG/cloud02.png");
+		arr_img_cloud[2]=loadImage(DataFolder+"BG/cloud03.png");
+
+		arr_img_balloon=new PImage[4];
+		arr_img_balloon[0]=loadImage(DataFolder+"BG/balloon-1.png");
+		arr_img_balloon[1]=loadImage(DataFolder+"BG/balloon-2.png");
+		arr_img_balloon[2]=loadImage(DataFolder+"BG/balloon-3.png");
+		arr_img_balloon[3]=loadImage(DataFolder+"BG/balloon-4.png");
 
 		arr_left_acloud=new ArrayList<ACloud>();
 		arr_right_acloud=new ArrayList<ACloud>();
@@ -677,13 +781,13 @@ class AGameScene extends GameScene{
 			int mcloud=(int)random(2,4);
 			for(int x=0;x<mcloud;++x){
 				arr_left_acloud.add(new ACloud((i+.5f)*204.8f+random(-90,90),((i+1)%2*110+220+random(-30,20))));
-			}
-			// tmpi=(int)random(MISLAND);
+			}			
 			mcloud=(int)random(2,4);
 			for(int x=0;x<mcloud;++x){
 				arr_right_acloud.add(new ACloud((i+.5f)*204.8f+random(-90,90),((i+1)%2*110+220+random(-30,20))));
 			}
 		}
+
 
 
 
@@ -703,6 +807,16 @@ class AGameScene extends GameScene{
 		arr_space_ship=new ASpaceShip[2];
 		for(int i=0;i<2;++i) arr_space_ship[i]=new ASpaceShip(i==0?Left_Screen_X:Right_Screen_X,random(45,65));
 
+		arr_space_ballon=new ASpaceBalloon[4];
+		for(int i=0;i<4;++i) arr_space_ballon[i]=new ASpaceBalloon((i<2?0:Right_Screen_X)+random(512*(i%2),512+512*(i%2)),384+random(20,100));
+		
+		arr_thin_cloud=new ACloud[8];
+		for(int i=0;i<8;++i){
+			arr_thin_cloud[i]=new ACloud((i<4?0:Right_Screen_X)+random(1024),random(120,180));
+			arr_thin_cloud[i].icloud=2;
+		} 
+
+
 		arr_img_red_num=new PImage[10];
 		arr_img_blue_num=new PImage[10];
 		for(int i=0;i<10;++i){
@@ -721,6 +835,17 @@ class AGameScene extends GameScene{
 		arr_star=new ArrayList<AStar>();
 		int mstar=12;
 		for(int i=0;i<=mstar;++i) arr_star.add(new AStar(4080/(float)mstar*i,-20));
+
+
+		aneoncat=new ANeonCat(-100,80);
+
+
+		arr_top_score=new AScore[2];
+		arr_top_score[0]=new AScore(0);
+		arr_top_score[1]=new AScore(1);
+
+
+		img_qrcode_title=loadImage("APP_TITLE_01.png");
 
 	}
 	private String getBuildPartFileName(int ibuild,int icat,int ipart,int iframe){
@@ -748,35 +873,71 @@ class AGameScene extends GameScene{
 		
 		addDefaultHouse();
 
-		
+		start_min=minute();	
 
 		arr_acc_score=new int[2];
 		for(int i=0;i<2;++i) arr_acc_score[i]=0;
 
-	}
-	public @Override void StartGame(){
-		
-		super.StartGame();
+		round_start_time=-1;
 
-		
+		if(!OFFLINE) photon_client.sendStartRunEvent();
+	}
+
+	public int getRoundTime(){
+		return (round_start_time<0)?0:millis()-round_start_time;
+	}
+	public void startRound(){
+
+		println("------------ START ROUND ------------");
+
+		super.StartGame();
+		round_start_time=millis();
+
+		first_to_join=true;
+	}
+	public void clearIsland(){
+
 		for(AIsland iland:map_left_island.values()){
 			iland.gotoDie();
+			// iland.reset();
 		}
 		for(AIsland iland:map_right_island.values()){
 			iland.gotoDie();
+			// iland.reset();
 		}
-			
+		
+		show_qrcode=false;
+
+	}
+	public void endRound(){
+
+		println("------------ End Round ------------");		
+		if(!OFFLINE){
+			photon_client.sendScoreEvent(arr_acc_score[0],arr_acc_score[1],0,0);	
+		} 
+		this.EndGame();
+
+		// back to wait after 3 sec
+		Timer ending_timer=new Timer();
+        TimerTask task=new TimerTask(){
+            @Override
+            public void run(){
+                // connect();
+                Init();
+            }
+        };
+        ending_timer.schedule(task,ROUND_BREAK_SPAN);
 	}
 
 
 	public @Override
 	void Update(){
 		
-		for(int i=0;i<2;++i) arr_acc_score[i]=0;
+		// for(int i=0;i<2;++i) arr_acc_score[i]=0;
 
 		for(AIsland iland:map_left_island.values()){
 			iland.update();
-			arr_acc_score[0]+=iland.acc_score;
+			// arr_acc_score[0]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
 				String file_name=drawIlandText(iland.build_name,1);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
@@ -785,7 +946,7 @@ class AGameScene extends GameScene{
 
 		for(AIsland iland:map_right_island.values()){
 			iland.update();
-			arr_acc_score[1]+=iland.acc_score;
+			// arr_acc_score[1]+=iland.acc_score;
 			if(iland.img_text==null && !iland.is_default){
 				String file_name=drawIlandText(iland.build_name,0);
 				if(file_name!=null) iland.img_text=loadImage(file_name);
@@ -795,20 +956,50 @@ class AGameScene extends GameScene{
 		
 		for(ACloud acloud:arr_left_acloud) acloud.update();
 		for(ACloud acloud:arr_right_acloud) acloud.update();
-			
+		for(ACloud acloud:arr_thin_cloud) acloud.update();
+
 		// for(AStart astar:arr_star) astar.update();
+
+		/* East Egg: Neon Cat! */
+		if(DO_EASTER_EGG){
+			aneoncat.update();
+			if(iback_group==0 || iback_group==3)
+				if(random(500)<1) triggerCat();
+		}
+		/* check backgroudn change routine */
+		if(abs(minute()-start_min)>=BACKGOUNRD_SPAN_MIN){
+			iback_group=(iback_group+1)%MBACK_GROUP;
+			start_min=minute();
+		}
+
+		/* update top score */
+		for(int i=0;i<2;++i) arr_top_score[i].setScore(arr_acc_score[i]);
+		for(int i=0;i<2;++i) arr_top_score[i].update();
+		
+
+		/* check round time */
+		if(game_state==GameState.PLAY && getRoundTime()>=ROUND_TIME) endRound();
+
 	}
 
 	public @Override
 	void DrawLeftScreen(PGraphics sub_pg){
 
 		// sub_pg.background(50);
-		sub_pg.image(arr_img_back[0],0,0);
+		sub_pg.image(arr_img_back[iback_group*3],0,0);
 		// for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
-		
-		for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
-		for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
-		
+		if(iback_group!=1 && iback_group!=2){
+			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+		}else{
+			for(ASpaceBalloon ball:arr_space_ballon) ball.draw(sub_pg,arr_img_balloon[ball.bindex]);
+		}
+		if(iback_group==2) for(ACloud acloud:arr_thin_cloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+
+
+		aneoncat.draw(sub_pg);
+
+
 		for(AIsland iland:map_left_island.values()){
 			iland.draw(sub_pg,getBuildPartImage(iland.arr_build_part));
 			// drawIlandText(sub_pg,iland._pos.x,iland._pos.y,iland.build_name);
@@ -818,7 +1009,7 @@ class AGameScene extends GameScene{
 			// }
 		} 
 
-		for(ACloud acloud:arr_left_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+		if(iback_group!=2) for(ACloud acloud:arr_left_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
 		
 		// for(int i=0;i<20;++i) pg.ellipse(random(width),random(height),20,20);
 		// for(House house:left_house_map.values()) house.draw(sub_pg);
@@ -832,19 +1023,28 @@ class AGameScene extends GameScene{
 	public @Override
 	void DrawRightScreen(PGraphics sub_pg){
 		// sub_pg.background(50);
-		sub_pg.image(arr_img_back[1],0,0);
+		sub_pg.image(arr_img_back[iback_group*3+1],0,0);
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(-Right_Screen_X,0);
-			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
-			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+			if(iback_group!=1 && iback_group!=2){
+				for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+				for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+			}else{
+				for(ASpaceBalloon ball:arr_space_ballon) ball.draw(sub_pg,arr_img_balloon[ball.bindex]);	
+			} 
+			if(iback_group==2) for(ACloud acloud:arr_thin_cloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+
+			aneoncat.draw(sub_pg);
+
 		sub_pg.popMatrix();
 
 		// for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
 		for(AIsland iland:map_right_island.values()) iland.draw(sub_pg,getBuildPartImage(iland.arr_build_part));
 
-		for(ACloud acloud:arr_right_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
+		if(iback_group!=2) for(ACloud acloud:arr_right_acloud) acloud.draw(sub_pg,arr_img_cloud[acloud.icloud]);
 		
+
 		if(game_state==GameState.END){
 			if(arr_acc_score[1]>=arr_acc_score[0]) sub_pg.image(arr_img_winlose[0],172,78);
 			else sub_pg.image(arr_img_winlose[1],172,78);
@@ -855,21 +1055,38 @@ class AGameScene extends GameScene{
 	public @Override
 	void DrawCenterScreen(PGraphics sub_pg){
 
-		sub_pg.image(arr_img_back[2],0,0);
+		sub_pg.image(arr_img_back[iback_group*3+2],0,0);
 
 		sub_pg.pushMatrix();
 		sub_pg.translate(-Left_Screen_X,0);
-			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
-			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+			if(iback_group!=1 && iback_group!=2){
+				for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
+				for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
+			}
+			aneoncat.draw(sub_pg);
 		sub_pg.popMatrix();
 
+
 		sub_pg.pushStyle();
-		sub_pg.imageMode(CENTER);
-			sub_pg.image(img_score,sub_pg.width/2,sub_pg.height/2);
+		// sub_pg.imageMode(CENTER);
+		sub_pg.textAlign(CENTER);
+		sub_pg.fill(255,255,0);
+		sub_pg.stroke(255,255,0);
+		sub_pg.textFont(timer_font,100);	
+
+			int rtime=(game_state==GameState.PLAY)?floor((ROUND_TIME-getRoundTime())/1000):0;
+			int rmin=floor(rtime/60);
+			int rsec=rtime%60;
+					
+			sub_pg.text(nf(rmin,2)+":"+nf(rsec,2),sub_pg.width/2,sub_pg.height+15);
+
 		sub_pg.popStyle();
 
-		drawScoreNumber(sub_pg,(int)arr_acc_score[0],0);
-		drawScoreNumber(sub_pg,(int)arr_acc_score[1],1);
+		// drawScoreNumber(sub_pg,(int)arr_acc_score[0],0);
+		// drawScoreNumber(sub_pg,(int)arr_acc_score[1],1);
+			
+		arr_top_score[0].draw(sub_pg,250,27);
+		arr_top_score[1].draw(sub_pg,1782,27);
 
 	}
 
@@ -880,13 +1097,27 @@ class AGameScene extends GameScene{
 	public void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
 		println("GameA Got Event: "+event_code.toString());
-		AIsland iland=getHouseById((String)params.get((byte)100),(Integer)params.get((byte)101));
+	
+		int left_right=0;
+		AIsland iland=null;
+		if(params.containsKey((byte)101)) left_right=(Integer)params.get((byte)101);
+		if(params.containsKey((byte)100)) iland=getHouseById((String)params.get((byte)100),left_right);
 
 		switch(event_code){
+			case Server_Start_Run:
+				if((Integer)params.get((byte)1)==1) startRound();
+				break;
+
 			case Server_Add_House:
-				if(game_state==GameState.WAIT) StartGame();
+
+				if(first_to_join){
+					clearIsland();
+					first_to_join=false;	
+				} 
+
 				addNewHouse((String)params.get((byte)100),(Integer)params.get((byte)101),false);
 				break;
+
 			case Server_Set_Name:
 				String str_name=null;
 				try{
@@ -901,18 +1132,26 @@ class AGameScene extends GameScene{
 				setHouseName(iland,str_name,(Integer)params.get((byte)2));
 				break;
 			case Server_Set_House:
-				setHousePart(iland,(Integer)params.get((byte)1),(Integer)params.get((byte)2),(Integer)params.get((byte)3),(Integer)params.get((byte)4),
+				setHousePart((left_right+1)%2,iland,(Integer)params.get((byte)1),(Integer)params.get((byte)2),(Integer)params.get((byte)3),(Integer)params.get((byte)4),
 							 (Integer)params.get((byte)5));
 				break;
 			case Server_Set_Blow:
-				setHouseTrigger(iland,0);
+				setHouseTrigger((left_right+1)%2,iland,0);
 				break;
 			case Server_Set_Light:
-				setHouseTrigger(iland,1);
+				setHouseTrigger((left_right+1)%2,iland,1);
 				break;
 			case Server_Set_Shake:			
-				setHouseTrigger(iland,2);
+				setHouseTrigger((left_right+1)%2,iland,2);
 				break;
+			case Server_Set_User_Leave:
+				if(iland!=null) iland.gotoDie();
+				break;
+
+			case Server_Score_Success:
+				//println("------The End------");
+				break;
+
 			case Server_LGG:
 				println("------The End------");
 				this.EndGame();
@@ -978,13 +1217,13 @@ class AGameScene extends GameScene{
 				}
 				if(success){
 					map_left_island.remove(key_rmv);	
-					map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
+					map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,0,is_default));		
 
 					println("Remove: "+key_rmv);
 				}else{
 					if(is_default){
 						i=map_left_island.size();
-						map_left_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
+						map_left_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,0,is_default));
 					}else println("NO PLACE TO ADD A NEW HOUSE");
 				}
 
@@ -1015,13 +1254,13 @@ class AGameScene extends GameScene{
 			}
 			if(success){
 				map_right_island.remove(key_rmv);	
-				map_right_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,is_default));		
+				map_right_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,1,is_default));		
 
 				println("Remove: "+key_rmv);
 			}else{
 				if(is_default){
 					i=map_right_island.size();
-					map_right_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,is_default));
+					map_right_island.put(user_id,new AIsland((i+.5f)*204.8f,(i+1)%2*110+180,1,is_default));
 				}else println("NO PLACE TO ADD A NEW HOUSE");
 			}
 
@@ -1038,19 +1277,24 @@ class AGameScene extends GameScene{
 		// drawIlandText(set_name);
 		iland.setName(set_name,ipeople);
 	}
-	public void setHousePart(AIsland iland,int b1,int p1,int p2,int p3,int p4){
+	public void setHousePart(int left_right,AIsland iland,int b1,int p1,int p2,int p3,int p4){
 		if(iland==null){
 			println("Illegal House!!");
 			return;
 		}
-		iland.setBuilding(b1,p1,p2,p3,p4);
+		int score=iland.setBuilding(b1,p1,p2,p3,p4);
+
+		arr_acc_score[left_right]+=score;
+
 	}
-	public void setHouseTrigger(AIsland iland,int type_trig){
+	public void setHouseTrigger(int left_right,AIsland iland,int type_trig){
 		if(iland==null){
 			println("Illegal House!!");
 			return;
 		}
-		iland.triggerMove(type_trig);
+		int score=iland.triggerMove(type_trig);
+
+		arr_acc_score[left_right]+=score;
 	}
 
 
@@ -1094,82 +1338,19 @@ class AGameScene extends GameScene{
 		return img;
 	}
 
-	public void drawScoreNumber(PGraphics pg,int nscore,int color_type){
 
-		pg.pushStyle();
-		pg.noStroke();
-		pg.textureMode(IMAGE);
-
-		pg.pushMatrix();
-		if(color_type==0) pg.translate(266,27);
-		else pg.translate(1524,27);
-
-		String score_str=nf(nscore,4);
-		// println(score_str+":");
-		float nwid=85;
-		for(int i=0;i<4;++i){
-			pg.pushMatrix();
-			pg.translate(i*nwid,0);
-			
-			int snum=(int)(score_str.charAt(i))-48;
-			if(color_type==0) pg.image(arr_img_blue_num[snum],0,0);
-			else pg.image(arr_img_red_num[snum],0,0);
-			
-			pg.popMatrix();
-		}
-
-		pg.popMatrix();
-
-		pg.popStyle();
-	}
+	
 
 	public void triggerBuilding(){
 		for(AIsland iland:map_left_island.values()){
-			switch(iland.istage){
-				case NONE:
-					String set_name="";
-					int len=(int)random(3,8);
-					for(int i=0;i<len;++i) set_name+=PApplet.parseChar(97+i);
-					iland.setName(set_name,(int)random(5));
-					break;
-				case MAN:
-					iland.setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
-					iland.setBuildingImage(getBuildPartImage(iland.arr_build_part));
-					break;
-				case HOUSE:							
-					if(random(5)<1) iland.init(iland._pos.x,iland._pos.y);
-					else{
-						iland.triggerMove(0);
-						iland.triggerMove(1);	
-					}
-					break;
-						
-			}
-
+			iland.triggerMove(0);
+			iland.triggerMove(1);
+			iland.triggerMove(2);
 		} 
 		for(AIsland iland:map_right_island.values()){
-			switch(iland.istage){
-				case NONE:
-					String set_name="";
-					int len=(int)random(3,8);
-					for(int i=0;i<len;++i) set_name+=PApplet.parseChar(97+(int)random(26));
-					iland.setName(set_name,(int)random(5));
-					break;
-				case MAN:
-					iland.setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
-					iland.setBuildingImage(getBuildPartImage(iland.arr_build_part));
-					break;
-				case HOUSE:							
-						
-					if(random(5)<1) iland.init(iland._pos.x,iland._pos.y);
-					else{
-						iland.triggerMove(0);
-						iland.triggerMove(1);
-					}
-					break;
-						
-			}
-
+			iland.triggerMove(0);
+			iland.triggerMove(1);
+			iland.triggerMove(2);
 		} 
 	}
 
@@ -1193,6 +1374,9 @@ class AGameScene extends GameScene{
 		} 
 		for(ACloud acloud:arr_right_acloud) acloud.triggerTurb();	
 
+	}
+	public void triggerCat(){
+		aneoncat.Restart();
 	}
 }
 
@@ -1225,14 +1409,16 @@ class AIsland{
 	int acc_score;
 	boolean is_default;
 
-	ArrayList<AScore> arr_score;
+	AScore ascore;
+
+	ArrayList<AFlyScore> arr_score;
 
 	ARainGroup rain_group;
 
 
-	AIsland(float set_posx,float set_posy,boolean set_default){
+	AIsland(float set_posx,float set_posy,int color_type,boolean set_default){
 		
-		arr_score=new ArrayList<AScore>();
+		arr_score=new ArrayList<AFlyScore>();
 		
 
 		init(set_posx,set_posy);
@@ -1241,6 +1427,7 @@ class AIsland{
 
 		if(is_default) setName();			
 		
+		ascore=new AScore(color_type);
 		
 	}
 	
@@ -1296,7 +1483,7 @@ class AIsland{
 
 		arr_build_part[5]=new ABuildPart(p5,5,p5);	
 		build_name=set_name;
-		drawTextGraph();
+		// drawTextGraph();
 
 		img_text=null;
 
@@ -1307,7 +1494,7 @@ class AIsland{
 	public void setBuilding(){
 		setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
 	}
-	public void setBuilding(int b1,int p1,int p2,int p3,int p4){
+	public int setBuilding(int b1,int p1,int p2,int p3,int p4){
 
 		arr_build_part[0]=new ABuildPart(b1,0,0);  // build
 		arr_build_part[1]=new ABuildPart(b1,1,p1); // cat1
@@ -1320,15 +1507,16 @@ class AIsland{
 
 		
 
-		if(is_default) return;
+		if(is_default) return 0;
 
 		int tscore=0;
 		tscore+=300*5;
 		if(p4==0) tscore-=100;
 		if(p4==1) tscore-=50;
 
-		addScore(tscore,false);
+		addScore(tscore,true);
 		
+		return tscore;
 
 	}
 
@@ -1376,11 +1564,12 @@ class AIsland{
 
 			
 			drawBuildGraph(pg,img_part,0,-75);
-			
+				
 
+			// draw people
 			if(img_part[6]!=null){
 				pg.pushMatrix();
-				pg.translate(50,-42);
+				pg.translate(60,-42);
 				// pg.scale(ani_man_born.GetPortion());
 				if(img_part[6]!=null){
 					float twid=img_part[6].width;
@@ -1405,52 +1594,38 @@ class AIsland{
 				
 
 			// if(pg_text!=null) pg.image(pg_text,50,2);
-			if(img_text!=null) pg.image(img_text,50,2);
+			if(img_text!=null){
+				pg.pushMatrix();
+				pg.translate(60,-10);
+				pg.scale(.7f);
+					pg.image(img_text,0,0);	
+				pg.popMatrix();
+			} 
 						
 			if(rain_group!=null) rain_group.draw(pg,-80,-RAIN_THRES);
 
 
 			pg.pushMatrix();
 			pg.translate(0,-120);
-				for(AScore score:arr_score) 
+				for(AFlyScore score:arr_score) 
 					if(!score.isDead()) score.draw(pg);
 			pg.popMatrix();
+
+			if(!is_default && (istage==AIslandAction.TURB || istage==AIslandAction.HOUSE)){
+				float score_scale=.3f;
+				pg.pushMatrix();
+				pg.translate(0,10);
+				pg.scale(score_scale);
+					ascore.draw(pg,0,0);
+				pg.popMatrix();
+			}
 
 		pg.popMatrix();
 
 		pg.popStyle();
 
 	}
-	public void drawTextGraph(){
-		// pg_text=createGraphics(200,52,P3D);
-		// pg_text.beginDraw();
-		// 	pg_text.translate(pg_text.width/2,pg_text.height/2);
-		// 	pg_text.scale(1,2);
-		// 	pg_text.background(0);
-		// 	pg_text.textFont(name_font);
-		// 	pg_text.textSize(18);
-		// 	pg_text.textAlign(CENTER,CENTER);
-		// 	pg_text.fill(255);
-
-		// 	pg_text.text(build_name,0,0);
-		// 	for(int i=0;i<2;++i) pg_text.filter(DILATE);
-
-		// 	pg_text.fill(65,103,177);
-		// 	pg_text.text(build_name,0,0);
-
-		// 	// pg_text.shader(shd_rmv_bg);
-		// 	// pg_text.loadPixels();
-		// 	for(int i=0;i<pg_text.width;++i)
-		// 		for(int j=0;j<pg_text.height;++j){
-		// 			color tcolor=pg_text.get(i,j);
-		// 			if(red(tcolor)<65 || green(tcolor)<103 || blue(tcolor)<177) pg_text.set(i,j,color(0,0));
-		// 			else pg_text.set(i,j,color(tcolor,255));
-		// 		}
-
-		// pg_text.endDraw();
-		// pg_text=getTextGraph(build_name);
-		// img_text=pg_text.textureImage;
-	}
+	
 	public void drawBuildGraph(PGraphics pg,PImage[] img_part,float px,float py){
 		
 		pg.pushMatrix();
@@ -1545,7 +1720,7 @@ class AIsland{
 				ani_house_born.Update();
 				if(ani_house_born.GetPortion()==1){
 					istage=AIslandAction.HOUSE;
-					for(AScore score:arr_score)	score.start();
+					for(AFlyScore score:arr_score)	score.start();
 				} 
 
 				// if(pg_build_born==null) pg_build_born=createGraphics(162,288,P3D);
@@ -1563,12 +1738,17 @@ class AIsland{
 		
 		
 		// for(AScore score:arr_score) score.update();
-		Iterator<AScore> it=arr_score.iterator();
+		Iterator<AFlyScore> it=arr_score.iterator();
 		while(it.hasNext()){
-			AScore score=it.next();
+			AFlyScore score=it.next();
 			score.update();
-		    if(score.isDead()) it.remove();		        
+		    if(score.isDead()){
+		    	acc_score+=score.mscore;
+		    	ascore.setScore(acc_score);
+		    	it.remove();		        	
+		    } 
 		}
+		ascore.update();
 
 
 		for(ABuildPart part:arr_build_part) 
@@ -1577,30 +1757,44 @@ class AIsland{
 		if(rain_group!=null) rain_group.update();
 
 	}
-	public void triggerMove(int type){
+	public int triggerMove(int type){
 
 		// acc_score+=25;
+		if(istage!=AIslandAction.HOUSE) return 0;
 
 		switch(type){
 			case 0: //cat-2
-				if(arr_build_part[2].start()) addScore(25,true);
+				if(arr_build_part[2].start()){
+					addScore(25,true);
+					return 25;	
+				} 
 				break;
 			case 1:	//cat-3
-				if(arr_build_part[3].ipart>1) arr_build_part[3].start();
-				else cat3_light_on=!cat3_light_on;
-				// if(!cat3_light_on) 
-				addScore(25,true);
+				if(arr_build_part[3].ipart>1){
+					if(arr_build_part[3].start()){
+						addScore(25,true);
+						return 25;
+					}
+				}else{
+					cat3_light_on=!cat3_light_on;
+					addScore(25,true);
+					return 25;	
+				} 
 				break;
 			case 2: // rain
 				if(rain_group!=null){
-					if(rain_group.start()) addScore(25,true);
+					if(rain_group.start()){
+						addScore(25,true);
+						return 25;
+					} 
 				}
 				break;
 			default :
-				acc_score-=25;
+				// acc_score-=25;
 				break;	
 		}
 
+		return 0;
 	}
 
 	public void triggerTurb(PVector dest_pos){
@@ -1626,10 +1820,12 @@ class AIsland{
 	}
 
 	public void addScore(int add_score,boolean trigger){
-		acc_score+=add_score;
-		AScore score=new AScore(add_score);
+		// acc_score+=add_score;
+		
+		AFlyScore score=new AFlyScore(add_score);
 		arr_score.add(score);
 		if(trigger) score.start();
+
 	}
 }
 
@@ -1686,6 +1882,114 @@ class ABuildPart{
 
 }
 
+class ANeonCat{
+	int MFRAME=5;
+	float TAIL_LEN=20;
+	float TAIL_SEG=50;
+
+	PVector _pos,_origin;
+	float _ang;
+	PImage[] arr_img;
+	float cur_frame=0;
+	boolean is_playing=false;
+
+	ANeonCat(float set_x,float set_y){
+		_pos=new PVector(set_x,set_y);
+
+
+		arr_img=new PImage[MFRAME];
+		for(int i=0;i<MFRAME;++i) arr_img[i]=loadImage("GAME_A/cat/cat_"+nf(i+1,4)+".png");
+
+		reset();
+
+	}
+	public void draw(PGraphics pg){
+
+		if(!is_playing) return;
+		
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+		pg.noStroke();
+		pg.pushMatrix();
+
+
+			float cur_seg=floor(_pos.x/TAIL_SEG);
+			float cur_len=_pos.x%TAIL_SEG;
+			int cur_pos=(int)(cur_seg%2);
+
+			pg.translate(_origin.x,_origin.y);
+			pg.rotate(_ang);
+
+			pg.translate(_pos.x,_pos.y);
+
+			pg.scale(.6f);
+				
+				pg.pushMatrix();
+				pg.translate(-cur_len,0);
+
+				for(int i=0;i<TAIL_LEN;++i){
+					pg.translate(-TAIL_SEG,0);
+					pg.pushStyle();
+					pg.colorMode(HSB);
+						for(int x=0;x<5;++x){
+							pg.fill(x*51,255,255,(TAIL_LEN-(float)i*.7f)/TAIL_LEN*255);
+							pg.rect(0,x*TAIL_SEG/5+((i+cur_pos)%2)*TAIL_SEG/5,TAIL_SEG,TAIL_SEG/5);
+						}
+					pg.popStyle();
+				}
+				
+				pg.popMatrix();
+
+				pg.image(arr_img[floor(cur_frame)],0,cur_pos*TAIL_SEG/5+30);				
+
+		pg.popMatrix();
+		pg.popStyle();
+
+	}
+	public void update(){
+		
+		if(!is_playing) return;
+
+		cur_frame+=.133f;
+		if(cur_frame>MFRAME) cur_frame=0;
+
+		_pos.x+=5;
+		if(_pos.x>1024){
+			is_playing=false;
+			reset();
+		}
+
+	}
+	public void reset(){
+		_pos.x=-100;
+		cur_frame=0;
+		_pos.y=random(50,100);
+
+		int icase=(int)random(4);
+		switch(icase){
+			case 0:
+				_origin=new PVector(random(20),random(150,300));
+				_ang=random(-PI/4,0);
+				break;
+			case 1:
+				_origin=new PVector(Right_Screen_X+random(20),random(150,300));	
+				_ang=random(-PI/4,0);
+				break;
+			case 2:
+				_origin=new PVector(Right_Screen_X+random(20),random(-150,-10));	
+				_ang=random(0,PI/4);
+				break;
+			case 3:
+				_origin=new PVector(random(20),random(-150,-10));	
+				_ang=random(0,PI/4);
+				break;	
+		}		
+
+	}
+	public void Restart(){
+		if(!is_playing) is_playing=true;
+	}
+}
 
 final float RAIN_THRES=350;
 final float RAIN_TIME=500;
@@ -1745,17 +2049,17 @@ class ARainGroup{
 	}
 }
 
-class AScore{
+class AFlyScore{
 
 	FrameAnimation ani_born,ani_life;
 	int mscore;
 	boolean is_dead=false;
 
-	AScore(int set_score){
+	AFlyScore(int set_score){
 		mscore=set_score;
 
-		ani_born=new FrameAnimation(10);
-		ani_life=new FrameAnimation(80);
+		ani_born=new FrameAnimation(5);
+		ani_life=new FrameAnimation(50);
 		ani_life.is_elastic=true;
 
 		
@@ -1791,6 +2095,121 @@ class AScore{
 	public boolean isDead(){
 		return is_dead;
 	}
+
+}
+
+// score on island
+class AScore{
+	
+	int mnum=4;
+	int cur_score,dest_score;
+	FrameAnimation[] ani_cur_change,ani_dest_change;
+	int[] arr_cur_num,arr_dest_num;
+	int color_type;
+
+	AScore(int set_type){
+		setup(set_type,false);
+	}
+	AScore(int set_type,boolean go_fast){	
+		setup(set_type,go_fast);
+	}
+	public void setup(int set_type,boolean go_fast){
+		cur_score=dest_score=0;
+		arr_cur_num=new int[mnum];
+		for(int i=0;i<mnum;++i) arr_cur_num[i]=0;
+
+		arr_dest_num=new int[mnum];
+		for(int i=0;i<mnum;++i) arr_dest_num[i]=0;
+
+		color_type=set_type;
+		ani_cur_change=new FrameAnimation[mnum];
+		for(int i=0;i<mnum;++i) ani_cur_change[i]=new FrameAnimation((go_fast?.5f:1)*(20+i*2),(i*5)*(go_fast?.5f:1));
+		
+		ani_dest_change=new FrameAnimation[mnum];
+		for(int i=0;i<mnum;++i) ani_dest_change[i]=new FrameAnimation((go_fast?.5f:1)*(20+i*2),(i*5+5)*(go_fast?.5f:1));
+		
+	}
+	public void draw(PGraphics pg,float x,float y){
+		pg.pushStyle();
+		// pg.imageMode(CENTER);
+		pg.textureMode(NORMAL);
+		pg.noStroke();
+
+		pg.pushMatrix();
+		pg.translate(x,y);
+		pg.translate(85*(mnum/2-1),0);
+		
+
+			for(int i=0;i<mnum;++i){
+
+				float t1=ani_cur_change[i].GetPortion();
+				float t2=ani_dest_change[i].GetPortion();
+
+				pg.pushMatrix();
+				pg.translate(-85*i,0);
+				if(color_type==1){				
+					if(arr_dest_num[i]!=arr_cur_num[i]){
+						drawNum(pg,arr_img_red_num[arr_dest_num[i]],t2,true);
+						drawNum(pg,arr_img_red_num[arr_cur_num[i]],t1,false);
+					}else drawNum(pg,arr_img_red_num[arr_dest_num[i]],1,true);
+				}else{
+					if(arr_dest_num[i]!=arr_cur_num[i]){
+						drawNum(pg,arr_img_blue_num[arr_dest_num[i]],t2,true);
+						drawNum(pg,arr_img_blue_num[arr_cur_num[i]],t1,false);
+					}else drawNum(pg,arr_img_blue_num[arr_dest_num[i]],1,true);
+				}
+				pg.popMatrix();
+			}
+
+		pg.popMatrix();
+
+		pg.popStyle();
+	}
+	public void drawNum(PGraphics pg,PImage img,float p,boolean is_dest){
+
+		pg.beginShape();
+		pg.texture(img);
+			pg.vertex(0,(is_dest?1-p:0)*109,0,(is_dest?0:p));
+			pg.vertex(85,(is_dest?1-p:0)*109,1,(is_dest?0:p));
+			pg.vertex(85,(is_dest?1:1-p)*109,1,(is_dest?p:1));
+			pg.vertex(0,(is_dest?1:1-p)*109,0,(is_dest?p:1));
+		pg.endShape();
+	}
+	public void update(){
+		for(int i=0;i<mnum;++i){
+			ani_cur_change[i].Update();
+			ani_dest_change[i].Update();
+		}
+		if(ani_dest_change[mnum-1].GetPortion()==1){
+			cur_score=dest_score;
+			for(int i=0;i<mnum;++i) arr_cur_num[i]=arr_dest_num[i];
+		}
+	}
+	public void addScore(int to_add){
+		setScore(dest_score+to_add);
+	}
+	public void setScore(int set_score){
+		if(set_score==cur_score || ani_dest_change[mnum-1].ani_start) return;
+		// if(set_score==cur_score) return;
+
+		dest_score=set_score;
+		arr_dest_num[0]=dest_score%10;
+		arr_dest_num[1]=floor(dest_score/10)%10;
+		arr_dest_num[2]=floor(dest_score/100)%10;
+		arr_dest_num[3]=floor(dest_score/1000)%10;
+
+		if(arr_dest_num[3]>9){
+			for(int i=0;i<mnum;++i) arr_dest_num[i]=9;				
+		}
+		println("Set score: "+dest_score);
+		
+		for(int i=0;i<mnum;++i){
+			ani_cur_change[i].Restart();
+			ani_dest_change[i].Restart();
+		}
+	}
+
+
 
 }
 final float MOTION_VEL=6;
@@ -1986,8 +2405,7 @@ class AvatarMotion{
 	//boolean setPaused(boolean set_pause,boolean trigger_speak){
 	public void startTalking(int tindex,boolean isbuild){
 		
-		if(isbuild) speak_bubble.setIndex(tindex);
-		else speak_bubble.setIndex(tindex);
+		speak_bubble.setIndex(tindex);
 		istage=AvatarAction.TALK;
 
 	}
@@ -2204,9 +2622,11 @@ class AvatarMotion{
 
 			if(mag_dist<AVATAR_THRES.x && mag_dist>AVATAR_SIZE.x*.8f){//if(x_dist<AVATAR_THRES.x){
 				if(_motion.readyToTalk() && this.readyToTalk() ){
-					int tindex=(int)random(2)*5;
-					_motion.startTalking(tindex+(int)random(5),false);
-					this.startTalking(tindex+(int)random(5),false);
+					int tindex=(int)random(10);
+
+					boolean tleft=pos.x<_motion.pos.x;
+					_motion.startTalking(tindex*2+(!tleft?1:0),false);
+					this.startTalking(tindex*2+(tleft?1:0),false);
 					return;
 				}
 			} 
@@ -2225,7 +2645,7 @@ class AvatarMotion{
 			acc.mult(0);
 			acc.add(5,0,0);	
 
-			if(GIRRAFE && !is_giraffe && random(5)<1){
+			if(DO_EASTER_EGG && !is_giraffe && random(5)<1){
 				action_delay=GIRAFFE_SPAN;
 				is_giraffe=true;
 			}
@@ -2445,6 +2865,10 @@ class BGameScene extends GameScene{
 		arr_icon_gen[1]=new IconGen(arr_icon_line[1],arr_icon_line[4]);
 		arr_icon_gen[2]=new IconGen(arr_icon_line[2],arr_icon_line[5]);
 
+
+		img_qrcode_title=loadImage("APP_TITLE_02.png");
+
+
 	}
 	public @Override
 	void Init(){
@@ -2518,7 +2942,10 @@ class BGameScene extends GameScene{
 					if(abs(_icon.pos_x-arr_car[0].getCurPosition())<.1f){
 						PImage _icontext=(_icon.icon_index<ITRANSCAR)?arr_img_icontext.get(_icon.icon_index):null;
 						arr_car[0].changeCar(_icon.icon_index,_icontext);
-						_icon.startExplode(_icontext);								
+						_icon.startExplode(_icontext);	
+
+						// send eat_icon
+						photon_client.sendEatIconEvent(1,(_icon.icon_index<ITRANSCAR)?1:2);
 					} 
 				}
 			}
@@ -2531,6 +2958,10 @@ class BGameScene extends GameScene{
 						PImage _icontext=(_icon.icon_index<ITRANSCAR)?arr_img_icontext.get(_icon.icon_index):null;
 						arr_car[1].changeCar(_icon.icon_index,_icontext);
 						_icon.startExplode(_icontext);								
+
+						// send eat_icon
+						photon_client.sendEatIconEvent(0,(_icon.icon_index<ITRANSCAR)?1:2);
+
 					} 
 				}
 			}
@@ -2773,6 +3204,8 @@ class BGameScene extends GameScene{
 		
 		switch(event_code){
 			case Server_Game_Start:
+
+
 				mcur_player=(Integer)params.get((byte)201);
 				arr_car[0].user_id=(String)params.get((byte)100);
 				if(mcur_player==2) arr_car[1].user_id=(String)params.get((byte)200);
@@ -2845,6 +3278,8 @@ class BGameScene extends GameScene{
 		println("CAR_DEST_DIST= "+CAR_DEST_DIST);
 
 		mov_road_loop.stop();
+
+		show_qrcode=false;
 
 		if(OFFLINE) startRoad();
 	}
@@ -3008,7 +3443,7 @@ class CGameScene extends GameScene{
 	final String DataFolder="GAME_C/";
 	final int MPEOPLE=20;
 	final int IPEOPLE=12;
-	final int MDEFAULT_FACE=11;
+	final int MDEFAULT_FACE=10;
 	final int NUM_9_FRAMECOUNT=51;
 	final int NUM_6_FRAMECOUNT=35;
 	final int NUM_FRAME_INTERVAL=5;
@@ -3024,6 +3459,8 @@ class CGameScene extends GameScene{
 
 	//ImageSeq[] people_movie=new ImageSeq[12];
 	ArrayList<ArrayList<PImage>> people_movie;
+	
+
 	ArrayList<PImage> default_face;
 	ArrayList<PImage> speak_bubble;
 
@@ -3037,14 +3474,19 @@ class CGameScene extends GameScene{
 	boolean clock_mode=false;
 	
 	Movie[] arr_clock_movie;
-	AlphaMovie num_movie_6,num_movie_9;
-	PImage point_1,point_2;
-	PImage[] arr_num_img_9;	
-	PImage[] arr_num_img_6;
+	// AlphaMovie num_movie_6,num_movie_9;
+	// PImage point_1,point_2;
+	// PImage[] arr_num_img_9;	
+	// PImage[] arr_num_img_6;
+	ArrayList<ArrayList<PImage>> arr_number_img;
 	int isecond;
-	ClockNumber[] arr_clock_number;
+	// ClockNumber[] arr_clock_number;
+	ClockAvatarNumber[] arr_clock_number;
+	float clock_base_y=70;
+	float clock_base_x=95;
+	float clock_margin_x=190;
+	ArrayList<ArrayList<PImage>> clock_people_movie;
 
-	
 
 	public @Override
 	void loadFiles(){
@@ -3080,14 +3522,18 @@ class CGameScene extends GameScene{
 
 
 		people_movie=new ArrayList<ArrayList<PImage>>();
+		clock_people_movie=new ArrayList<ArrayList<PImage>>();
 
-		for(int i=1;i<=13;++i){
+		for(int i=1;i<13;++i){
 			people_movie.add(new ArrayList<PImage>());
+			clock_people_movie.add(new ArrayList<PImage>());
+			int m=clock_people_movie.size()-1;
+
 			String file_name="";
 			if(i<11) file_name=getRepeatText("P",i);
 			else if(i==11) file_name="GOD";
 			else if(i==12) file_name="CAT";
-			else if(i==13) file_name="F";
+			// else if(i==13) file_name="F";
 
 			//people_movie[i]=new ImageSeq(DataFolder+"PEOPLE/P"+nf(i,3)+"/"+file_name,6);
 			int frame_count=6;
@@ -3095,7 +3541,13 @@ class CGameScene extends GameScene{
 				String fname=DataFolder+"PEOPLE/P"+nf(i,3)+"/"+file_name+"_"+nf(j,5)+".png";
 				println(fname);
 				PImage load_image=loadImage(fname);
-				(people_movie.get(i-1)).add(load_image);
+				(people_movie.get(m)).add(load_image);
+
+				String fname2=DataFolder+"PEOPLE02/P"+nf(i,3)+"/PERSON_"+nf(i,3)+"_"+nf(j,5)+".png";
+				println(fname2);
+				PImage load_image2=loadImage(fname2);
+				(clock_people_movie.get(m)).add(load_image2);
+
 			}
 		}
 
@@ -3109,10 +3561,15 @@ class CGameScene extends GameScene{
 
 		speak_bubble=new ArrayList<PImage>();
 		for(int i=0;i<10;++i){
-			String fname=DataFolder+"ICON/P"+nf(i,3)+".png";
+			String fname=DataFolder+"ICON/P"+nf(i+1,3)+".png";
 			println(fname);
 			PImage load_image=loadImage(fname);
 			speak_bubble.add(load_image);
+
+			String fname2=DataFolder+"ICON/P"+nf(i+1,3)+"_2.png";
+			println(fname2);
+			PImage load_image2=loadImage(fname2);
+			speak_bubble.add(load_image2);
 		}
 
 		arr_clock_movie=new Movie[3];
@@ -3120,21 +3577,60 @@ class CGameScene extends GameScene{
 		arr_clock_movie[1]=new Movie(gapplet,DataFolder+"CLOCK_BACK/RIGHT_FINAL.mov");
 		arr_clock_movie[2]=new Movie(gapplet,DataFolder+"CLOCK_BACK/MIDDLE_FINAL.mov");
 		
-		num_movie_6=new AlphaMovie(gapplet,DataFolder+"CLOCK/NUMBER0_6.mov");
-		num_movie_9=new AlphaMovie(gapplet,DataFolder+"CLOCK/NUMBER0_9.mov");
-		point_1=loadImage(DataFolder+"CLOCK/POINT_1.png");
-		point_2=loadImage(DataFolder+"CLOCK/POINT_2.png");
+		// num_movie_6=new AlphaMovie(gapplet,DataFolder+"CLOCK/NUMBER0_6.mov");
+		// num_movie_9=new AlphaMovie(gapplet,DataFolder+"CLOCK/NUMBER0_9.mov");
+		// point_1=loadImage(DataFolder+"CLOCK/POINT_1.png");
+		// point_2=loadImage(DataFolder+"CLOCK/POINT_2.png");
 
-		arr_num_img_9=new PImage[NUM_9_FRAMECOUNT];
-		for(int i=0;i<NUM_9_FRAMECOUNT;++i) arr_num_img_9[i]=loadImage(DataFolder+"CLOCK/NUMBER0_9/NUMBER0_9"+nf(i,2)+".png");
-		arr_num_img_6=new PImage[NUM_6_FRAMECOUNT];
-		for(int i=0;i<NUM_6_FRAMECOUNT;++i) arr_num_img_6[i]=loadImage(DataFolder+"CLOCK/NUMBER0_6/NUMBER0_6"+nf(i,2)+".png");
+		// arr_num_img_9=new PImage[NUM_9_FRAMECOUNT];
+		// for(int i=0;i<NUM_9_FRAMECOUNT;++i) arr_num_img_9[i]=loadImage(DataFolder+"CLOCK/NUMBER0_9/NUMBER0_9"+nf(i,2)+".png");
+		// arr_num_img_6=new PImage[NUM_6_FRAMECOUNT];
+		// for(int i=0;i<NUM_6_FRAMECOUNT;++i) arr_num_img_6[i]=loadImage(DataFolder+"CLOCK/NUMBER0_6/NUMBER0_6"+nf(i,2)+".png");
 
-		arr_clock_number=new ClockNumber[8];
-		for(int i=0;i<8;++i){
-			if(i!=6) arr_clock_number[i]=new ClockNumber(0,NUM_9_FRAMECOUNT,0);
-			else arr_clock_number[i]=new ClockNumber(0,NUM_6_FRAMECOUNT,1);
+
+		arr_number_img=new ArrayList<ArrayList<PImage>>();
+		for(int i=0;i<10;++i){
+			ArrayList<PImage> arr_num=new ArrayList<PImage>();
+			for(int x=0;x<30;++x){
+				PImage timg=loadImage(DataFolder+"CLOCK/num_"+i+"/num_"+nf(i,0)+nf(x,5)+".png");
+				arr_num.add(timg);
+			}
+			arr_number_img.add(arr_num);
 		}
+		ArrayList<PImage> arr_colon=new ArrayList<PImage>();
+		for(int x=0;x<6;++x){
+			PImage timg=loadImage(DataFolder+"CLOCK/num_colon/num_colon_"+nf(x,5)+".png");
+			arr_colon.add(timg);
+		}
+		arr_number_img.add(arr_colon);
+
+		ArrayList<PImage> arr_slash=new ArrayList<PImage>();
+		for(int x=0;x<6;++x){
+			PImage timg=loadImage(DataFolder+"CLOCK/num_slash/num_slash_"+nf(x,5)+".png");
+			arr_slash.add(timg);
+		}
+		arr_number_img.add(arr_slash);
+
+
+
+		// arr_clock_number=new ClockNumber[10];
+		// for(int i=0;i<10;++i){
+		// 	// if(i!=6) arr_clock_number[i]=new ClockNumber(0,NUM_9_FRAMECOUNT,0);
+		// 	// else arr_clock_number[i]=new ClockNumber(0,NUM_6_FRAMECOUNT,1);
+
+		// 	if(i==2) arr_clock_number[i]=new ClockNumber(11,6,0);
+		//  	else if(i==7) arr_clock_number[i]=new ClockNumber(10,6,0);
+		//  	else arr_clock_number[i]=new ClockNumber(0,30,0);
+		// }
+
+		arr_clock_number=new ClockAvatarNumber[10];
+		for(int i=0;i<10;++i){
+			
+			if(i==2) arr_clock_number[i]=new ClockAvatarNumber(11);
+		 	else if(i==7) arr_clock_number[i]=new ClockAvatarNumber(10);
+		 	else arr_clock_number[i]=new ClockAvatarNumber(0);
+		}
+		
 
 
 		arr_img_door=new PImage[24];
@@ -3144,7 +3640,7 @@ class CGameScene extends GameScene{
 		
 		img_giraffe=loadImage(DataFolder+"giraffe.png");
 
-
+		img_qrcode_title=loadImage("APP_TITLE_03.png");
 
 	}
 	public String getRepeatText(String rtext,int num){
@@ -3202,7 +3698,38 @@ class CGameScene extends GameScene{
 
 		if(clock_mode){
 			for(int i=0;i<3;++i) arr_clock_movie[i].read();
-			for(int i=0;i<8;++i) arr_clock_number[i].update();
+			for(int i=0;i<10;++i) arr_clock_number[i].update();
+
+			String nmonth=nf(month(),2);
+			String nday=nf(day(),2);
+			for(int i=0;i<2;++i){
+				int inum=Integer.valueOf(nmonth.charAt(i))-48;
+				updateClockNumber(arr_clock_number[i],inum);
+			}
+			
+			for(int i=0;i<2;++i){
+				int inum=Integer.valueOf(nday.charAt(i))-48;
+				updateClockNumber(arr_clock_number[3+i],inum);
+			}
+
+
+			String nhour=nf(hour(),2);
+			String nminute=nf(minute(),2);
+			for(int i=0;i<2;++i){
+				int inum=Integer.valueOf(nhour.charAt(i))-48;
+				updateClockNumber(arr_clock_number[5+i],inum);
+			}
+			
+			for(int i=0;i<2;++i){
+				int inum=Integer.valueOf(nminute.charAt(i))-48;
+				updateClockNumber(arr_clock_number[8+i],inum);
+			}
+
+			/* go out every 10 sec*/
+			if(second()%10==9){
+				for(ClockAvatarNumber num:arr_clock_number) num.start();
+			}
+
 			return;
 		}
 
@@ -3300,30 +3827,63 @@ class CGameScene extends GameScene{
 		if(clock_mode){
 			sub_pg.image(arr_clock_movie[0],0,0);
 
-			float base_y=25;
-			float base_x=100;
-			float margin_x=200;
-
-			String nmonth=nf(month(),2);
-			String nday=nf(day(),2);
-			for(int i=0;i<2;++i){
-				int inum=Integer.valueOf(nmonth.charAt(i))-48;
-				arr_clock_number[i].updateNum(inum);
-				int cur_fr=arr_clock_number[i].getCurFrame();
-				//print(inum+"-"+cur_fr+" ");
-				sub_pg.image(arr_num_img_9[cur_fr],base_x+margin_x*i,base_y);
-			}
 			
-			sub_pg.image(point_1,base_x+margin_x*2,260+base_y);
+			// sub_pg.pushStyle();
+			// sub_pg.imageMode(CENTER);
 
-			for(int i=0;i<2;++i){
-				int inum=Integer.valueOf(nday.charAt(i))-48;
-				arr_clock_number[2+i].updateNum(inum);
-				int cur_fr=arr_clock_number[2+i].getCurFrame();
+			// float base_y=200;
+			// float base_x=37+95;
+			// float margin_x=190;
+
+			// String nmonth=nf(month(),2);
+			// String nday=nf(day(),2);
+			
+
+			// for(int i=0;i<2;++i){
+			// 	int inum=Integer.valueOf(nmonth.charAt(i))-48;
+			// 	arr_clock_number[i].updateNum(inum);
+			// 	int cur_fr=arr_clock_number[i].getCurFrame();
 				
-				sub_pg.image(arr_num_img_9[cur_fr],base_x+45+margin_x*(2+i),base_y);
+			// 	sub_pg.image(arr_number_img.get(arr_clock_number[i].getCurNum()).get(cur_fr),base_x+margin_x*i,base_y);
+			// }
+			
+			// sub_pg.image(arr_number_img.get(11).get(arr_clock_number[2].getCurFrame()),base_x+margin_x*2,base_y);
+
+			// for(int i=0;i<2;++i){
+			// 	int inum=Integer.valueOf(nday.charAt(i))-48;
+			// 	arr_clock_number[3+i].updateNum(inum);
+			// 	int cur_fr=arr_clock_number[3+i].getCurFrame();
+				
+			// 	sub_pg.image(arr_number_img.get(arr_clock_number[3+i].getCurNum()).get(cur_fr),base_x+45+margin_x*(2.6+i),base_y);
+			// }
+			
+			// sub_pg.popStyle();
+
+		
+
+		
+
+			for(int i=0;i<2;++i){
+
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+clock_margin_x*i,clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[i]);				
+				sub_pg.popMatrix();
 			}
 			
+			sub_pg.pushMatrix();
+			sub_pg.translate(clock_base_x+clock_margin_x*2,clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[2]);				
+			sub_pg.popMatrix();
+			
+			for(int i=0;i<2;++i){
+
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+45+clock_margin_x*(2.6f+i),clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[3+i]);				
+				sub_pg.popMatrix();
+			}
+
 			return;
 		}
 
@@ -3373,38 +3933,81 @@ class CGameScene extends GameScene{
 		
 		if(clock_mode){
 			sub_pg.image(arr_clock_movie[1],0,0);
-			float base_y=25;
-			float base_x=100;
-			float margin_x=200;
 
-			String nhour=nf(hour(),2);
-			String nminute=nf(minute(),2);
-			for(int i=0;i<2;++i){
-				int inum=Integer.valueOf(nhour.charAt(i))-48;
-				arr_clock_number[4+i].updateNum(inum);
-				int cur_fr=arr_clock_number[4+i].getCurFrame();
+
+			// sub_pg.pushStyle();
+			// sub_pg.imageMode(CENTER);
+
+			// 	int inum=Integer.valueOf(nhour.charAt(i))-48;
+			// 	arr_clock_number[4+i].updateNum(inum);
+			// 	int cur_fr=arr_clock_number[4+i].getCurFrame();
 				
-				sub_pg.image(arr_num_img_9[cur_fr],base_x+margin_x*i,base_y);
+			// 	sub_pg.image(arr_num_img_9[cur_fr],base_x+margin_x*i,base_y);
+			// }
+			
+			// int t=millis();
+			// if(t-isecond<500) sub_pg.image(point_2,base_x+margin_x*2,135+base_y);
+			// if(t-isecond>=1000){
+			// 	isecond=t;
+			// 	//println(isecond);
+			// }
+
+			// for(int i=0;i<2;++i){
+			// 	int inum=Integer.valueOf(nminute.charAt(i))-48;
+			// 	arr_clock_number[6+i].updateNum(inum);
+			// 	int cur_fr=arr_clock_number[6+i].getCurFrame();
+				
+			// 	if(i==0) sub_pg.image(arr_num_img_6[cur_fr],base_x+46+margin_x*(2+i),base_y);
+			// 	else sub_pg.image(arr_num_img_9[cur_fr],base_x+46+margin_x*(2+i),base_y);
+			// }
+			
+			// for(int i=0;i<2;++i){
+			// 	int inum=Integer.valueOf(nhour.charAt(i))-48;
+			// 	arr_clock_number[5+i].updateNum(inum);
+			// 	int cur_fr=arr_clock_number[5+i].getCurFrame();
+				
+			// 	sub_pg.image(arr_number_img.get(arr_clock_number[5+i].getCurNum()).get(cur_fr),base_x+margin_x*i,base_y);
+			// }
+			
+			// sub_pg.image(arr_number_img.get(10).get(arr_clock_number[7].getCurFrame()),base_x+margin_x*1.9,base_y);
+
+			// for(int i=0;i<2;++i){
+			// 	int inum=Integer.valueOf(nminute.charAt(i))-48;
+			// 	boolean changed=arr_clock_number[8+i].updateNum(inum);
+			// 	if(changed){
+			// 		for(int x=0;x<10;++x) arr_clock_number[x].updateNum();
+			// 	}
+			
+			// 	int cur_fr=arr_clock_number[8+i].getCurFrame();
+				
+			// 	sub_pg.image(arr_number_img.get(arr_clock_number[8+i].getCurNum()).get(cur_fr),base_x+margin_x*(2.7+i),base_y);
+			// }
+
+			// sub_pg.popStyle();
+
+			// return;
+			for(int i=0;i<2;++i){
+		
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+clock_margin_x*i,clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[5+i]);				
+				sub_pg.popMatrix();
 			}
 			
-			int t=millis();
-			if(t-isecond<500) sub_pg.image(point_2,base_x+margin_x*2,135+base_y);
-			if(t-isecond>=1000){
-				isecond=t;
-				//println(isecond);
-			}
-
-			for(int i=0;i<2;++i){
-				int inum=Integer.valueOf(nminute.charAt(i))-48;
-				arr_clock_number[6+i].updateNum(inum);
-				int cur_fr=arr_clock_number[6+i].getCurFrame();
-				
-				if(i==0) sub_pg.image(arr_num_img_6[cur_fr],base_x+46+margin_x*(2+i),base_y);
-				else sub_pg.image(arr_num_img_9[cur_fr],base_x+46+margin_x*(2+i),base_y);
-			}
+			sub_pg.pushMatrix();
+			sub_pg.translate(clock_base_x+clock_margin_x*2,clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[7]);				
+			sub_pg.popMatrix();
 			
-
+			for(int i=0;i<2;++i){
+				
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+45+clock_margin_x*(2.6f+i),clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[8+i]);				
+				sub_pg.popMatrix();
+			}
 			return;
+
 		}		//drawSquaresBack(sub_pg);
 		sub_pg.image(back_movie[2],0,0);
 
@@ -3478,12 +4081,16 @@ class CGameScene extends GameScene{
 		
 	}
 
+
+
+
 	public @Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
 		println("GameC Got Event: "+event_code.toString());
 		switch(event_code){
 			case Server_Set_Face:
+				show_qrcode=false;
 				setFace(params);
 				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
@@ -3645,7 +4252,15 @@ class CGameScene extends GameScene{
 	}
     public void toggleClockMode(){
     	clock_mode=!clock_mode;
-    	if(clock_mode) initClockMode();
+    	if(clock_mode){
+    		show_qrcode=false;	
+    		initClockMode();
+    	}else{
+    		show_qrcode=true;	
+    		for(ClockAvatarNumber num:arr_clock_number){
+				num.pause();
+			}
+    	}
 
     }
 	public void initClockMode(){
@@ -3660,22 +4275,488 @@ class CGameScene extends GameScene{
 		String nday=nf(day(),2);
 		String nhour=nf(hour(),2);
 		String nminute=nf(minute(),2);
+
+		// float cmillisecond=(Calendar.getInstance().get(Calendar.MILLISECOND))%1000;
+		// int csecond=second()%30;
+		int cur_frame=0;
+		// if(csecond<1){
+		// 	cur_frame=(int)(cmillisecond/1000*12);
+		// }else if(csecond<29){
+		// 	cur_frame=(int)(12+cmillisecond/500*6);
+		// }else{
+		// 	cur_frame=(int)(18+cmillisecond/1000*12);
+		// }
 		
-		arr_clock_number[0].Reset(Integer.valueOf(nmonth.charAt(0))-48);
-		arr_clock_number[1].Reset(Integer.valueOf(nmonth.charAt(1))-48);
-		arr_clock_number[2].Reset(Integer.valueOf(nday.charAt(0))-48);
-		arr_clock_number[3].Reset(Integer.valueOf(nday.charAt(1))-48);
+		// arr_clock_number[0].Reset(Integer.valueOf(nmonth.charAt(0))-48,cur_frame);
+		// arr_clock_number[1].Reset(Integer.valueOf(nmonth.charAt(1))-48,cur_frame);
+		// arr_clock_number[2].Reset(10,cur_frame);
+		// arr_clock_number[3].Reset(Integer.valueOf(nday.charAt(0))-48,cur_frame);
+		// arr_clock_number[4].Reset(Integer.valueOf(nday.charAt(1))-48,cur_frame);		
 		
-		arr_clock_number[4].Reset(Integer.valueOf(nhour.charAt(0))-48);
-		arr_clock_number[5].Reset(Integer.valueOf(nhour.charAt(1))-48);
-		arr_clock_number[6].Reset(Integer.valueOf(nminute.charAt(0))-48);
-		arr_clock_number[7].Reset(Integer.valueOf(nminute.charAt(1))-48);
+		// arr_clock_number[5].Reset(Integer.valueOf(nhour.charAt(0))-48,cur_frame);
+		// arr_clock_number[6].Reset(Integer.valueOf(nhour.charAt(1))-48,cur_frame);
+		// arr_clock_number[7].Reset(11,cur_frame);
+		// arr_clock_number[8].Reset(Integer.valueOf(nminute.charAt(0))-48,cur_frame);
+		// arr_clock_number[9].Reset(Integer.valueOf(nminute.charAt(1))-48,cur_frame);
 		
+		arr_clock_number[0].updateNum(Integer.valueOf(nmonth.charAt(0))-48);
+		arr_clock_number[1].updateNum(Integer.valueOf(nmonth.charAt(1))-48);
+		arr_clock_number[2].updateNum(10);
+		arr_clock_number[3].updateNum(Integer.valueOf(nday.charAt(0))-48);
+		arr_clock_number[4].updateNum(Integer.valueOf(nday.charAt(1))-48);		
+		
+		arr_clock_number[5].updateNum(Integer.valueOf(nhour.charAt(0))-48);
+		arr_clock_number[6].updateNum(Integer.valueOf(nhour.charAt(1))-48);
+		arr_clock_number[7].updateNum(11);
+		arr_clock_number[8].updateNum(Integer.valueOf(nminute.charAt(0))-48);
+		arr_clock_number[9].updateNum(Integer.valueOf(nminute.charAt(1))-48);
+
+		int findex=0;
+		for(ClockAvatarNumber num:arr_clock_number){
+			findex=updateClockAvatar(num,findex);
+			num.start();
+		}
 
 	}
 
+	private void drawClockNumber(PGraphics pg,ClockAvatarNumber clock_num){
+		
+		int _mavatar=clock_num.getAvatarSize();
+		int cur_frame=clock_num.getCurFrame();
+		float ani_pos=clock_num.getAniPortion();
+		float ani_change=clock_num.getChangePortion();
+
+		for(int i=0;i<_mavatar;++i){
+			ClockAvatar _avatar=clock_num.getAvatar(i);
+			PImage img_body=clock_people_movie.get(_avatar.icharacter).get(cur_frame);
+			if(img_body==null) println("image null: "+_avatar.icharacter+"-"+cur_frame);
+			_avatar.draw(pg,img_body,ani_pos,ani_change);
+			// _avatar.draw(pg,people_movie.get(_avatar.icharacter).get(_avatar.getCurFrame()));
+		}
+	}
+	private void updateClockNumber(ClockAvatarNumber clock_num,int set_num){
+		if(clock_num.updateNum(set_num)){
+			updateClockAvatar(clock_num,0);
+		}
+	}
+	private int updateClockAvatar(ClockAvatarNumber clock_num,int from_findex){
+		
+		int total=arr_avatar.size();
+		
+		int _mavatar=clock_num.getPosSize();
+		int _msrc=clock_num.getAvatarSize();
+		println("Update Clock: "+_msrc+" -> "+_mavatar);
+
+		if(_msrc>_mavatar){
+			for(int i=_msrc-1;i>=_mavatar;--i) clock_num.removeAvatar(i);
+		}
+
+		for(int i=0;i<_mavatar;++i){
+			if(i<_msrc){
+				clock_num.updateAvatar(i);
+			}else{
+				FaceAvatar face=arr_avatar.get((from_findex+i)%total);
+				clock_num.addAvatar(i,face.icharacter,face.face_image);
+			}
+		}
+		clock_num.startChange();
+
+		return from_findex+_mavatar-1;
+	}
+
+}
+
+class ClockAvatar{
+	final float POS_WID=30;
+	final float POS_HEI=62;
+	int icharacter;
+	PImage img_face;
+	PVector pos_src,pos_dest;
+	PVector ctrl_src,ctrl_dest;
+
+	PVector pos_src2,pos_dest2;
+	PVector ctrl_src2,ctrl_dest2;
+
+
+	ImageSeq img_seq;
+	
+	FrameAnimation anima_pos;
+
+	ClockNumAction iaction;
+
+
+	ClockAvatar(int set_findex,PImage set_image,PVector set_src,PVector set_dest){
+		icharacter=set_findex;
+		img_face=set_image;
+		
+		pos_src=set_src;
+		pos_dest=set_dest;
+		setupCtrlPoint(false);
+
+		// set up for born
+		pos_src2=set_src.get();
+		pos_src2.x+=random(3,6)*(random(2)<1?1:-1);
+		pos_src2.y=(pos_src.y<2)?-3:7;
+	
+		ctrl_src2=PVector.sub(pos_src,pos_src2);
+		ctrl_src2.rotate(random(-PI/3,PI/3));
+		ctrl_src2.mult(.5f);
+
+		ctrl_dest2=ctrl_src2.get();
+		ctrl_dest2.rotate(PI);
+
+		ctrl_src2.add(pos_src2);
+		ctrl_dest2.add(pos_src);
+
+
+		// img_seq=new ImageSeq(6);
+		// img_seq.play();
+
+		// anima_pos=new FrameAnimation(180,random(50,200));
+		// anima_pos.is_loop=true;
+		// anima_pos.Restart();
+
+		iaction=ClockNumAction.BORN;
+
+	}
+	public void setupCtrlPoint(boolean to_change){
+		if(to_change){
+			ctrl_src2=PVector.sub(pos_dest2,pos_src2);
+			ctrl_src2.rotate(random(PI));
+
+			ctrl_dest2=ctrl_src.get();
+			ctrl_dest2.rotate(random(PI/2));
+
+			ctrl_src2.add(pos_src2);
+			ctrl_dest2.add(pos_src2);
+
+			// pos_dest2=pos_src2.get();
+
+		}else{
+			ctrl_src=PVector.sub(pos_dest,pos_src);
+			ctrl_src.rotate(random(PI));
+
+			ctrl_dest=ctrl_src.get();
+			ctrl_dest.rotate(random(PI/2));
+
+			ctrl_src.add(pos_src);
+			ctrl_dest.add(pos_src);
+
+			// pos_dest=pos_src.get();
+		}
+
+
+	}
+	public void updatePos(PVector set_src,PVector set_dest){
+		pos_src2=set_src;
+		pos_dest2=set_dest;
+		setupCtrlPoint(true);
+		iaction=ClockNumAction.CHANGE;
+	}
+
+	public void update(){
+		// img_seq.update();
+		// anima_pos.Update();
+	}
+	public void draw(PGraphics pg,PImage img_body){
+		draw(pg,img_body,anima_pos.GetPortion(),1);
+	}
+	public void draw(PGraphics pg,PImage img_body,float tdraw,float tchange){
+		
+		
+		
+
+		float cur_x=0,cur_y=0;
+
+		switch(iaction){
+			case BORN:
+				cur_x=bezierPoint(pos_src2.x,ctrl_src2.x,ctrl_dest2.x,pos_src.x,tchange);
+				cur_y=bezierPoint(pos_src2.y,ctrl_src2.y,ctrl_dest2.y,pos_src.y,tchange);
+				if(tchange==1 && tdraw==1) iaction=ClockNumAction.WALK;
+				break;
+			case WALK:
+				if(tdraw==1) setupCtrlPoint(false);
+
+				cur_x=bezierPoint(pos_src.x,ctrl_src.x,ctrl_dest.x,pos_src.x,tdraw);
+				cur_y=bezierPoint(pos_src.y,ctrl_src.y,ctrl_dest.y,pos_src.y,tdraw);
+				// println("WALK: "+tdraw);
+				break;			
+			case CHANGE:
+				PVector csrc=PVector.lerp(pos_src,pos_src2,tchange);
+				PVector cdest=PVector.lerp(pos_dest,pos_dest2,tchange);
+				PVector cctrl1=PVector.lerp(ctrl_src,ctrl_src2,tchange);
+				PVector cctrl2=PVector.lerp(ctrl_dest,ctrl_dest2,tchange);
+
+				cur_x=bezierPoint(csrc.x,cctrl1.x,cctrl2.x,csrc.x,tdraw);
+				cur_y=bezierPoint(csrc.y,cctrl1.y,cctrl2.y,csrc.y,tdraw);
+
+				if(tchange==1){
+					pos_src=pos_src2.get();
+					pos_dest=pos_dest2.get();
+					ctrl_src=ctrl_src2.get();
+					ctrl_dest=ctrl_dest2.get();
+					iaction=ClockNumAction.WALK;
+				}
+
+				break;
+			case LEAVE:
+				cur_x=bezierPoint(pos_src.x,ctrl_src.x,ctrl_dest.x,pos_dest.x,tchange);
+				cur_y=bezierPoint(pos_src.y,ctrl_src.y,ctrl_dest.y,pos_dest.y,tchange);
+				if(tdraw==1) iaction=ClockNumAction.DEAD;
+				break;
+			case DEAD:
+				cur_x=pos_dest.x;
+				cur_y=pos_dest.y;
+				break;
+		}
+		pg.pushStyle();
+		pg.imageMode(CENTER);
+
+		// pg.stroke(255,0,0);
+		// pg.bezier(pos_src.x*POS_WID,pos_src.y*POS_HEI,
+		// 		  ctrl_src.x*POS_WID,ctrl_src.y*POS_HEI,
+		// 		  ctrl_dest.x*POS_WID,ctrl_dest.y*POS_HEI,
+		// 		  pos_src.x*POS_WID,pos_src.y*POS_HEI);
+
+		pg.pushMatrix();
+		pg.translate(cur_x*POS_WID,cur_y*POS_HEI+(icharacter>9?8:0));
+			pg.pushMatrix();
+			pg.scale(.4f);
+				pg.image(img_face,0,-28);				
+			pg.popMatrix();
+
+			pg.pushMatrix();
+			pg.scale(.95f);
+				pg.image(img_body,0,0);
+			pg.popMatrix();
+		pg.popMatrix();
+
+		pg.popStyle();
+	}
+
+	public int getCurFrame(){
+		return (int)(img_seq.icur_frame);
+	}
+	public void gotoDie(float tdraw){
+		if(iaction!=ClockNumAction.WALK) return;
+		iaction=ClockNumAction.LEAVE;
+		
+		float cur_x=bezierPoint(pos_src.x,ctrl_src.x,ctrl_dest.x,pos_src.x,tdraw);
+		float cur_y=bezierPoint(pos_src.y,ctrl_src.y,ctrl_dest.y,pos_src.y,tdraw);
+		pos_src=new PVector(cur_x,cur_y);
+
+		pos_dest.y=(cur_y<2)?-2:6;
+		pos_dest.x+=random(3,6)*(random(2)<1?1:-1);
+	
+		ctrl_src=PVector.sub(pos_dest,pos_src);
+		ctrl_src.rotate(random(PI));
+
+		ctrl_dest=ctrl_src.get();
+		ctrl_dest.rotate(PI);
+
+		ctrl_src.add(pos_src);
+		ctrl_dest.add(pos_dest);
+	}
+	public boolean isDead(){
+		return iaction==ClockNumAction.DEAD;
+	}
+}
+PVector[] ArrPos_ClockNum={new PVector(0,0),new PVector(1,0),new PVector(2,0),new PVector(3,0),new PVector(4,0),
+						new PVector(0,1),new PVector(4,1),
+						new PVector(0,2),new PVector(1,2),new PVector(2,2),new PVector(3,2),new PVector(4,2),	
+						new PVector(0,3),new PVector(4,3),
+						new PVector(0,4),new PVector(1,4),new PVector(2,4),new PVector(3,4),new PVector(4,4)};
+
+class ClockAvatarNumber{
+	int cur_num=-1;
+	int dest_num=-1;
+
+	ArrayList<PVector> arr_num_pos;
+	ArrayList<ClockAvatar> arr_avatar;
+
+	ImageSeq img_seq;
+	FrameAnimation anima_pos,anima_change;
+
+
+	ClockAvatarNumber(int set_num){
+		arr_num_pos=new ArrayList<PVector>();
+		arr_avatar=new ArrayList<ClockAvatar>();
+		
+		img_seq=new ImageSeq(6);
+		img_seq.play();
+
+
+		/* Go out every 10 sec */
+		anima_pos=new FrameAnimation(180);
+		// anima_pos.is_loop=true;
+		
+		
+		anima_change=new FrameAnimation(90);
+
+
+		updateNum(set_num);
+	}
+	public void addAvatar(int aindex,int findex,PImage fimage){
+		arr_avatar.add(new ClockAvatar(findex,fimage,arr_num_pos.get(aindex),
+										new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1))));
+	}
+	public void updateAvatar(int aindex){
+		println("Update Clock Avatar: "+aindex);
+		ClockAvatar _avatar=arr_avatar.get(aindex);
+		_avatar.updatePos(arr_num_pos.get(aindex),
+							new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1)));
+	}
+	public void removeAvatar(int aindex){
+		println("Rmv Clock Avatar: "+aindex);
+		arr_avatar.get(aindex).gotoDie(anima_pos.GetPortion());
+	}
+	public void startChange(){	
+		// anima_change.setDue(min(90,180-180*anima_change.GetPortion()));	
+		anima_change.Restart();
+	}
+
+	public void start(){
+		anima_pos.Restart();
+		img_seq.play();
+	}
+	public void pause(){
+		anima_pos.Pause();
+		img_seq.pause();
+	}
+	public void update(){
+		anima_pos.Update();
+		img_seq.update();
+
+		anima_change.Update();
+		if(anima_change.GetPortion()==1) cur_num=dest_num;
+		// for(ClockAvatar c:arr_avatar) c.update();
+		Iterator<ClockAvatar> it=arr_avatar.iterator();
+		while(it.hasNext()){
+			ClockAvatar c=it.next();
+			if(c.isDead()) it.remove();
+		}
+	}	
+	public int getAvatarSize(){
+		return arr_avatar.size();
+	}
+	public int getPosSize(){
+		return arr_num_pos.size();
+	}
+	public ClockAvatar getAvatar(int i){
+		return arr_avatar.get(i);
+	}
+	public int getCurFrame(){
+		return (int)(img_seq.icur_frame);
+	}
+	public float getAniPortion(){
+		return anima_pos.GetPortion();
+	}
+	public float getChangePortion(){
+		return anima_change.GetPortion();	
+	}
+	
+	public boolean updateNum(int set_num){
+		
+		if(dest_num==set_num) return false;
+		if(arr_avatar.size()>0 && (getAniPortion()==1 || getAniPortion()==0)) return false;
+ 
+
+		dest_num=set_num;
+		arr_num_pos.clear();
+		// arr_avatar.clear();
+
+
+		switch(dest_num){
+			case 0:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[5]);arr_num_pos.add(ArrPos_ClockNum[6]);
+				arr_num_pos.add(ArrPos_ClockNum[7]);arr_num_pos.add(ArrPos_ClockNum[11]);
+				arr_num_pos.add(ArrPos_ClockNum[12]);arr_num_pos.add(ArrPos_ClockNum[13]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;
+			case 1:
+				arr_num_pos.add(new PVector(2,0));
+				arr_num_pos.add(new PVector(2,1));
+				arr_num_pos.add(new PVector(2,2));
+				arr_num_pos.add(new PVector(2,3));
+				arr_num_pos.add(new PVector(2,4));
+				break;
+			case 2:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[6]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[12]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;
+			case 3:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[6]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[13]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;
+			case 4:
+				arr_num_pos.add(ArrPos_ClockNum[0]);arr_num_pos.add(ArrPos_ClockNum[4]);
+				arr_num_pos.add(ArrPos_ClockNum[5]);arr_num_pos.add(ArrPos_ClockNum[6]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[13]);
+				arr_num_pos.add(ArrPos_ClockNum[18]);
+				break;
+			case 5:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[5]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[13]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;
+			case 6:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[5]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[12]);arr_num_pos.add(ArrPos_ClockNum[13]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;
+			case 7:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[6]);
+				arr_num_pos.add(ArrPos_ClockNum[11]);
+				arr_num_pos.add(ArrPos_ClockNum[13]);
+				arr_num_pos.add(ArrPos_ClockNum[18]);
+				break;
+			case 8:
+				for(int i=0;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				break;
+			case 9:
+				for(int i=0;i<5;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[5]);arr_num_pos.add(ArrPos_ClockNum[6]);
+				for(int i=7;i<12;++i) arr_num_pos.add(ArrPos_ClockNum[i]);
+				arr_num_pos.add(ArrPos_ClockNum[13]);
+				for(int i=14;i<19;++i) arr_num_pos.add(ArrPos_ClockNum[i]);				
+				break;		
+			case 11: //colon
+				arr_num_pos.add(new PVector(2,1));
+				arr_num_pos.add(new PVector(2,3));
+				break;		
+			case 10:
+				arr_num_pos.add(new PVector(3,0));
+				arr_num_pos.add(new PVector(2.5f,1));
+				arr_num_pos.add(new PVector(2,2));
+				arr_num_pos.add(new PVector(1.5f,3));
+				arr_num_pos.add(new PVector(1,4));
+				break;		
+		}
+		return true;
+
+	}
+
+
 }
 class ClockNumber{
+
+	final int FrameLoopStart=12;
+	final int FrameLoopEnd=17;
+
+
 	final float fr_vel=.2f;
 	final float fr_inter=5;
 	private int cur_num;
@@ -3687,34 +4768,78 @@ class ClockNumber{
 	private int total_frame;
 	private int itype;
 
+	private int MLOOP=2*28;
+	private int minter_loop;
+
 	ClockNumber(int set_num,int set_total,int set_type){
 		total_frame=set_total;
 		itype=set_type;
-		Reset(set_num);
+		Reset(set_num,0);
 	}
-	public void Reset(int set_num){
-		cur_num=set_num;
-		cur_frame=cur_num*fr_inter;
-		dest_frame=(int)cur_frame;
-	}
-	public void updateNum(int set_dest){
+	// void Reset(int set_num){
+	// 	cur_num=set_num;
+	// 	cur_frame=cur_num*fr_inter;
+	// 	dest_frame=(int)cur_frame;
+	// }
+	// void updateNum(int set_dest){
 		
-		if(set_dest==dest_num) return;
+	// 	if(set_dest==dest_num) return;
+	// 	println(cur_num+"->"+set_dest);
+
+	// 	dest_num=set_dest;
+	// 	dest_frame=set_dest*(int)fr_inter;
+	// }
+	// void update(){
+	// 	if(dest_frame!=floor(cur_frame)){
+	// 		cur_frame=(cur_frame+fr_vel)%total_frame;
+	// 	}else{
+	// 		cur_num=dest_num;
+	// 	}
+	// }
+	public void Reset(int set_num,int set_frame){
+		cur_num=set_num;
+		dest_num=cur_num;
+		cur_frame=set_frame;	
+		minter_loop=0;	
+	}
+	public void updateNum(){
+		minter_loop=MLOOP+1;
+	}
+	public boolean updateNum(int set_dest){
+		
+		if(set_dest==dest_num) return false;
 		println(cur_num+"->"+set_dest);
 
 		dest_num=set_dest;
-		dest_frame=set_dest*(int)fr_inter;
+		// updateNum();
+		return true;
+		// dest_frame=set_dest*(int)fr_inter;
 	}
 	public void update(){
-		if(dest_frame!=floor(cur_frame)){
-			cur_frame=(cur_frame+fr_vel)%total_frame;
-		}else{
-			cur_num=dest_num;
+		
+		cur_frame+=fr_vel;
+		if(ceil(cur_frame)==FrameLoopEnd+1){
+			if(minter_loop<MLOOP){
+				cur_frame=FrameLoopStart;
+				minter_loop++;
+				// println("LOOP= "+minter_loop);
+			}
 		}
+
+		if(cur_frame>total_frame){
+			cur_frame%=total_frame;
+			minter_loop=0;	
+
+			if(dest_num!=cur_num) cur_num=dest_num;			
+		}
+
+	}
+	public int getCurNum(){
+		return cur_num;
 	}
 
 	public int getCurFrame(){
-		return (int)cur_frame;
+		return floor(cur_frame);
 	}
 }
 class CountDown{
@@ -4057,6 +5182,7 @@ class EnergyCar{
 		else{
 			// dest_vel=.6*ROAD_MOV_SPEED;
 			dest_vel=cur_vel-0.4f*ROAD_MOV_SPEED;
+			dest_vel=constrain(dest_vel,ROAD_MOV_SPEED*.6f,ROAD_MOV_SPEED*3);
 			ani_car_transform.Restart();
 			ani_icon_timer.Restart();	
 			is_bump_transform=true;
@@ -4290,7 +5416,8 @@ class FaceAvatar{
 
 			drawAvatar(pg,face_image);
 			if(char_img!=null) pg.image(char_img,0,0);
-			//pg.text(user_name,0,0);
+			
+
 			mmotion.speak_bubble.draw(pg,0,-100,bubble_img);
 
 		}
@@ -4427,8 +5554,8 @@ class SpeakBubble{
 		pg.pushMatrix();
 		pg.translate(x_,y_);
 		
-		if(ibubble==5||ibubble==6||ibubble==7||ibubble==8) pg.translate(-50,0);
-		else pg.translate(50,0);
+		if(ibubble%2==0) pg.translate(20,0);
+		else pg.translate(-20,0);
 
 		if(scalee==0) pg.rotate(PI/40*sin((float)frameCount/3));
 		
@@ -4483,6 +5610,7 @@ class FrameAnimation{
 	boolean ani_end=false;
 
 	boolean is_elastic=false;
+	boolean is_loop=false;
 
 	FrameAnimation(float set_length){
 		setup(set_length,0);
@@ -4526,6 +5654,9 @@ class FrameAnimation{
 		else{
 			ani_start=false;
 			ani_t=1;
+			if(is_loop){
+				Restart();
+			}
 		}
 	}
 	public void Pause(){
@@ -4551,6 +5682,9 @@ class FrameAnimation{
 		start_pos=set_start;
 		end_pos=set_end;
 	}
+	public void setDue(float set_due){
+		ani_vel=1.0f/set_due;
+	}
 	public void setDelay(float set_delay){
 		delay_fr=set_delay;		
 	}
@@ -4560,9 +5694,9 @@ class FrameAnimation{
 }
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,0,1024,384};
-	final int[] Center_Screen_Rect={1024,0,2032,176};
-	final int[] Right_Screen_Rect={2032,176,1024,384};
+	final int[] Left_Screen_Rect={0,176,1024,384};
+	final int[] Center_Screen_Rect={0,0,2032,176};
+	final int[] Right_Screen_Rect={1024,176,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -4571,6 +5705,10 @@ class GameScene{
 	boolean wait_mode=true;
 	Thread thread_load=null;
 	boolean finish_load=false;
+
+	PImage img_qrcode_title;
+	
+	boolean show_qrcode;
 
 	GameScene(){
 		pg=createGraphics(width,height,P3D);
@@ -4607,6 +5745,8 @@ class GameScene{
 		game_state=GameState.WAIT;
 		show_game_over=false;
 		wait_mode=true;
+
+		show_qrcode=true;
 	}
 
 	public void SUpdate(){
@@ -4621,12 +5761,12 @@ class GameScene{
 
 		left_pg.beginDraw();
 			DrawLeftScreen(left_pg);
-			// if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
+			if(show_qrcode) drawWaitTitle(left_pg,true);
 		left_pg.endDraw();
 
 		right_pg.beginDraw();
 			DrawRightScreen(right_pg);
-			// if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
+			if(show_qrcode) drawWaitTitle(right_pg,false);
 		right_pg.endDraw();
 		
 		center_pg.beginDraw();
@@ -4676,11 +5816,13 @@ class GameScene{
 
 	public void drawWaitTitle(PGraphics pg,boolean is_android){
 		pg.pushStyle();
-		pg.tint(255,255*sin((float)frameCount/50));
-			pg.image(img_qrcode_title,0,0);
+		pg.imageMode(CENTER);
+		pg.tint(255);
+			pg.image(img_qrcode_title,pg.width/2,img_qrcode_title.height/2);
 			// pg.tint(255,abs(sin((float)frameCount/50))*105+150);
-			if(is_android) pg.image(img_qrcode_android,383,105);
-			else pg.image(img_qrcode_ios,383,105);
+			float thei=(pg.height+img_qrcode_title.height)/2;
+			if(is_android) pg.image(img_qrcode_android,pg.width/2,thei);
+			else pg.image(img_qrcode_ios,pg.width/2,thei);
 		pg.popStyle();
 	}
 }
@@ -4846,13 +5988,13 @@ class IconLine{
 
 class IconGen{
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=240;
+	final float ICON_DELAY=90;
 
 	FrameAnimation ani_gen;
 	IconLine[] arr_icon_line;
 
 	IconGen(IconLine icline_1,IconLine icline_2){
-		ani_gen=new FrameAnimation(ICON_SPAN+ICON_DELAY);
+		ani_gen=new FrameAnimation(ICON_SPAN);
 		
 		arr_icon_line=new IconLine[2];
 		arr_icon_line[0]=icline_1;
@@ -4867,13 +6009,15 @@ class IconGen{
 		ani_gen.Update();
 		if(!ani_gen.ani_start){
 
-			addToIconLine(random(ICON_DELAY*random(.3f,1)));
+			float new_delay=random(ICON_DELAY*random(.3f,1));
+			addToIconLine(new_delay);
+			ani_gen.setDelay(new_delay);
 			ani_gen.Restart();
 		}
 	}
 	public void addToIconLine(float new_delay){
 		println("ADD TO ICON LINE!");
-		int new_ic=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		int new_ic=(random(3)>1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
 		for(IconLine icline:arr_icon_line) icline.addNewIcon(new_ic,new_delay);
 	}
 
@@ -4966,9 +6110,9 @@ class ImageSeq{
 
 
 
-// final String SERVER_IP="210.65.11.248:5055";
+// final String SERVER_IP="kerkerker.artgital.com:5055";
 final String SERVER_IP="192.168.2.227:5055";
-final String SERVER_NAME="STGameB";
+final String SERVER_NAME="STPhotonServer";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
@@ -5060,6 +6204,17 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    public void sendEatIconEvent(int side,int type){
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();        
+        eventContent.put((byte)1,type);
+        eventContent.put((byte)101,side);
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LEatIcon.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()   
+    }
+    public void sendSwitchGameEvent(int game_to_switch){
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();        
+        eventContent.put((byte)1,game_to_switch);
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LSwitchGame.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()      
     }
     
     @Override

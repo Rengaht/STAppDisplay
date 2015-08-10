@@ -8,13 +8,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Calendar;
 
 import processing.video.*;
 
-boolean DRAW_DEBUG=true;
+boolean DRAW_DEBUG=false;
 boolean OFFLINE=true;
 final int MGAME=3;
-final boolean GIRRAFE=false;
+boolean DO_EASTER_EGG=false;
 
 final int Left_Screen_X=1024;
 final int Right_Screen_X=3056;
@@ -26,17 +27,17 @@ int igame_scene=-1;
 GameScene[] agame_scene;
 boolean show_game_over=false;
 
-PFont font,name_font;
+PFont font,name_font,timer_font;
 PApplet gapplet;
 
-PImage img_qrcode_title,img_qrcode_android,img_qrcode_ios;
+PImage img_qrcode_android,img_qrcode_ios;
 
 PShader shd_rmv_bg;
 
 
 void setup(){
 
-	size(3056,560,P3D);
+	size(2048,560,P3D);
 	gapplet=this;
 
 	
@@ -52,7 +53,7 @@ void setup(){
 		ex.printStackTrace();
 	}
 	
-	img_qrcode_title=loadImage("APP_TITLE.png");
+	// img_qrcode_title=loadImage("APP_TITLE.png");
 	img_qrcode_android=loadImage("qr_android.png");
 	img_qrcode_ios=loadImage("qr_ios.png");
 
@@ -67,8 +68,8 @@ void setup(){
 	font=loadFont("GameOver_Font.vlw");
 	textFont(font, 40);
 	
-	name_font=loadFont("MicrosoftMHei-Bold-22.vlw");
-	// textFont(name_font);
+	name_font=loadFont("Combined-Bold-22.vlw");
+	timer_font=loadFont("Timer_Font.vlw");
 
 	shd_rmv_bg=loadShader("Rmv_Black.glsl");
 	
@@ -86,7 +87,11 @@ void draw(){
 
 	// if(mousePressed) photon_client.sendSomeEvent();
 
+	float scale_to_screen=1;//(float)displayWidth/4060.0;
 	
+	
+
+
 	boolean all_loaded=true;
 	for(int i=0;i<MGAME;++i){
 		if(agame_scene[i]!=null && !agame_scene[i].finish_load) all_loaded=false;
@@ -108,19 +113,27 @@ void draw(){
 			String no_str="NO GAME";
 			for(int i=0;i<(frameCount/10)%5;++i) no_str+=".";
 			text(no_str,20,height/2+50);
+		
 			return;	
 		}
+
+		pushMatrix();
+		scale(scale_to_screen);
+
 		agame_scene[igame_scene].SUpdate();
 		agame_scene[igame_scene].Draw();
 		agame_scene[igame_scene].DrawOnGraph(this.g);
+
+		popMatrix();
 	}
 
 	
+	
+
 
 	frame.setTitle(String.valueOf(frameRate));
 
 	if(DRAW_DEBUG){
-
 		if(OFFLINE){
 			text("OFFLINE",1064,500);
 		}else{
@@ -128,8 +141,8 @@ void draw(){
 		}
 	}
 
+	// if(mousePressed) saveFrame("STApp_cap_#####.png");
 
-	// text("啦啦啦啦蔡佳礽",20,20);
 }
 
 
@@ -203,7 +216,16 @@ void keyPressed(){
 		case 't':
 			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerTurb();
 			break;
-					
+		case ENTER:
+			if(!OFFLINE) photon_client.sendSwitchGameEvent((igame_scene+1)%3);
+			break;
+		case 'n':
+			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerCat();
+			break;
+
+		case 'e':
+			DO_EASTER_EGG=!DO_EASTER_EGG;
+			break;
 	}
 
 }
@@ -230,8 +252,9 @@ String drawIlandText(String build_name,int left_right){
 		pg_text.text(build_name,0,0);
 		for(int i=0;i<2;++i) pg_text.filter(DILATE);
 
-		if(left_right==1) pg_text.fill(65,103,177);
-		else pg_text.fill(239,74,82);
+		// if(left_right==1) pg_text.fill(65,103,177);
+		// else pg_text.fill(239,74,82);
+		pg_text.fill(0);
 
 		pg_text.text(build_name,0,0);
 

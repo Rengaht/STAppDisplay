@@ -5,6 +5,8 @@ public enum GameEventCode{
 	LJoin(101),
 	LScore(102),
 	LStartRun(103),
+	LEatIcon(104),
+	LSwitchGame(105),
 	
 	Server_Add_House(211),
 	Server_Set_Name(212),
@@ -13,6 +15,7 @@ public enum GameEventCode{
 	Server_Set_Blow(214),
 	Server_Set_Light(215),
 	Server_Set_Shake(216),
+	Server_Set_User_Leave(217),
 
 	Server_Game_Start(220),
 	Server_User_Color(221),
@@ -45,7 +48,11 @@ public enum GameEventCode{
 				return LScore;
 			case 103:
 				return LStartRun;
-
+			case 104:
+				return LEatIcon;
+			case 105:
+				return LSwitchGame;
+				
 			case 150:
 				return Server_Login_Success;
 			case 151:
@@ -64,6 +71,8 @@ public enum GameEventCode{
 				return Server_Set_Light;
 			case 216:
 				return Server_Set_Shake;
+			case 217:
+				return Server_Set_User_Leave;
 				
 			case 201:
 				return Server_LConnected;

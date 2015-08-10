@@ -10,6 +10,7 @@ class FrameAnimation{
 	boolean ani_end=false;
 
 	boolean is_elastic=false;
+	boolean is_loop=false;
 
 	FrameAnimation(float set_length){
 		setup(set_length,0);
@@ -53,6 +54,9 @@ class FrameAnimation{
 		else{
 			ani_start=false;
 			ani_t=1;
+			if(is_loop){
+				Restart();
+			}
 		}
 	}
 	void Pause(){
@@ -77,6 +81,9 @@ class FrameAnimation{
 	void setPos(float set_start,float set_end){
 		start_pos=set_start;
 		end_pos=set_end;
+	}
+	void setDue(float set_due){
+		ani_vel=1.0/set_due;
 	}
 	void setDelay(float set_delay){
 		delay_fr=set_delay;		

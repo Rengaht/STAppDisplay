@@ -160,13 +160,13 @@ class IconLine{
 
 class IconGen{
 	final float ICON_SPAN=60;
-	final float ICON_DELAY=240;
+	final float ICON_DELAY=90;
 
 	FrameAnimation ani_gen;
 	IconLine[] arr_icon_line;
 
 	IconGen(IconLine icline_1,IconLine icline_2){
-		ani_gen=new FrameAnimation(ICON_SPAN+ICON_DELAY);
+		ani_gen=new FrameAnimation(ICON_SPAN);
 		
 		arr_icon_line=new IconLine[2];
 		arr_icon_line[0]=icline_1;
@@ -181,13 +181,15 @@ class IconGen{
 		ani_gen.Update();
 		if(!ani_gen.ani_start){
 
-			addToIconLine(random(ICON_DELAY*random(.3,1)));
+			float new_delay=random(ICON_DELAY*random(.3,1));
+			addToIconLine(new_delay);
+			ani_gen.setDelay(new_delay);
 			ani_gen.Restart();
 		}
 	}
 	void addToIconLine(float new_delay){
 		println("ADD TO ICON LINE!");
-		int new_ic=(random(2)<1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
+		int new_ic=(random(3)>1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
 		for(IconLine icline:arr_icon_line) icline.addNewIcon(new_ic,new_delay);
 	}
 

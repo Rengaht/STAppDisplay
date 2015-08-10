@@ -3,9 +3,9 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
-// final String SERVER_IP="210.65.11.248:5055";
+// final String SERVER_IP="kerkerker.artgital.com:5055";
 final String SERVER_IP="192.168.2.227:5055";
-final String SERVER_NAME="STGameB";
+final String SERVER_NAME="STPhotonServer";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
@@ -97,6 +97,17 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
+    }
+    public void sendEatIconEvent(int side,int type){
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();        
+        eventContent.put((byte)1,type);
+        eventContent.put((byte)101,side);
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LEatIcon.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()   
+    }
+    public void sendSwitchGameEvent(int game_to_switch){
+        HashMap<Object, Object> eventContent = new HashMap<Object, Object>();        
+        eventContent.put((byte)1,game_to_switch);
+        this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LSwitchGame.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()      
     }
     
     @Override

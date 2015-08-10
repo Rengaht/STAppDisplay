@@ -128,7 +128,8 @@ class FaceAvatar{
 
 			drawAvatar(pg,face_image);
 			if(char_img!=null) pg.image(char_img,0,0);
-			//pg.text(user_name,0,0);
+			
+
 			mmotion.speak_bubble.draw(pg,0,-100,bubble_img);
 
 		}
@@ -265,8 +266,8 @@ class SpeakBubble{
 		pg.pushMatrix();
 		pg.translate(x_,y_);
 		
-		if(ibubble==5||ibubble==6||ibubble==7||ibubble==8) pg.translate(-50,0);
-		else pg.translate(50,0);
+		if(ibubble%2==0) pg.translate(20,0);
+		else pg.translate(-20,0);
 
 		if(scalee==0) pg.rotate(PI/40*sin((float)frameCount/3));
 		

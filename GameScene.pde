@@ -1,8 +1,8 @@
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,0,1024,384};
-	final int[] Center_Screen_Rect={1024,0,2032,176};
-	final int[] Right_Screen_Rect={2032,176,1024,384};
+	final int[] Left_Screen_Rect={0,176,1024,384};
+	final int[] Center_Screen_Rect={0,0,2032,176};
+	final int[] Right_Screen_Rect={1024,176,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -11,6 +11,10 @@ class GameScene{
 	boolean wait_mode=true;
 	Thread thread_load=null;
 	boolean finish_load=false;
+
+	PImage img_qrcode_title;
+	
+	boolean show_qrcode;
 
 	GameScene(){
 		pg=createGraphics(width,height,P3D);
@@ -47,6 +51,8 @@ class GameScene{
 		game_state=GameState.WAIT;
 		show_game_over=false;
 		wait_mode=true;
+
+		show_qrcode=true;
 	}
 
 	void SUpdate(){
@@ -61,12 +67,12 @@ class GameScene{
 
 		left_pg.beginDraw();
 			DrawLeftScreen(left_pg);
-			// if(game_state==GameState.WAIT) drawWaitTitle(left_pg,true);
+			if(show_qrcode) drawWaitTitle(left_pg,true);
 		left_pg.endDraw();
 
 		right_pg.beginDraw();
 			DrawRightScreen(right_pg);
-			// if(game_state==GameState.WAIT) drawWaitTitle(right_pg,false);
+			if(show_qrcode) drawWaitTitle(right_pg,false);
 		right_pg.endDraw();
 		
 		center_pg.beginDraw();
@@ -116,11 +122,13 @@ class GameScene{
 
 	void drawWaitTitle(PGraphics pg,boolean is_android){
 		pg.pushStyle();
-		pg.tint(255,255*sin((float)frameCount/50));
-			pg.image(img_qrcode_title,0,0);
+		pg.imageMode(CENTER);
+		pg.tint(255);
+			pg.image(img_qrcode_title,pg.width/2,img_qrcode_title.height/2);
 			// pg.tint(255,abs(sin((float)frameCount/50))*105+150);
-			if(is_android) pg.image(img_qrcode_android,383,105);
-			else pg.image(img_qrcode_ios,383,105);
+			float thei=(pg.height+img_qrcode_title.height)/2;
+			if(is_android) pg.image(img_qrcode_android,pg.width/2,thei);
+			else pg.image(img_qrcode_ios,pg.width/2,thei);
 		pg.popStyle();
 	}
 }

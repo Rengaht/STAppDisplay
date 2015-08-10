@@ -27,14 +27,16 @@ class AIsland{
 	int acc_score;
 	boolean is_default;
 
-	ArrayList<AScore> arr_score;
+	AScore ascore;
+
+	ArrayList<AFlyScore> arr_score;
 
 	ARainGroup rain_group;
 
 
-	AIsland(float set_posx,float set_posy,boolean set_default){
+	AIsland(float set_posx,float set_posy,int color_type,boolean set_default){
 		
-		arr_score=new ArrayList<AScore>();
+		arr_score=new ArrayList<AFlyScore>();
 		
 
 		init(set_posx,set_posy);
@@ -43,6 +45,7 @@ class AIsland{
 
 		if(is_default) setName();			
 		
+		ascore=new AScore(color_type);
 		
 	}
 	
@@ -98,7 +101,7 @@ class AIsland{
 
 		arr_build_part[5]=new ABuildPart(p5,5,p5);	
 		build_name=set_name;
-		drawTextGraph();
+		// drawTextGraph();
 
 		img_text=null;
 
@@ -109,7 +112,7 @@ class AIsland{
 	void setBuilding(){
 		setBuilding((int)random(5),(int)random(4),(int)random(4),(int)random(4),(int)random(4));
 	}
-	void setBuilding(int b1,int p1,int p2,int p3,int p4){
+	int setBuilding(int b1,int p1,int p2,int p3,int p4){
 
 		arr_build_part[0]=new ABuildPart(b1,0,0);  // build
 		arr_build_part[1]=new ABuildPart(b1,1,p1); // cat1
@@ -122,15 +125,16 @@ class AIsland{
 
 		
 
-		if(is_default) return;
+		if(is_default) return 0;
 
 		int tscore=0;
 		tscore+=300*5;
 		if(p4==0) tscore-=100;
 		if(p4==1) tscore-=50;
 
-		addScore(tscore,false);
+		addScore(tscore,true);
 		
+		return tscore;
 
 	}
 
@@ -178,11 +182,12 @@ class AIsland{
 
 			
 			drawBuildGraph(pg,img_part,0,-75);
-			
+				
 
+			// draw people
 			if(img_part[6]!=null){
 				pg.pushMatrix();
-				pg.translate(50,-42);
+				pg.translate(60,-42);
 				// pg.scale(ani_man_born.GetPortion());
 				if(img_part[6]!=null){
 					float twid=img_part[6].width;
@@ -207,52 +212,38 @@ class AIsland{
 				
 
 			// if(pg_text!=null) pg.image(pg_text,50,2);
-			if(img_text!=null) pg.image(img_text,50,2);
+			if(img_text!=null){
+				pg.pushMatrix();
+				pg.translate(60,-10);
+				pg.scale(.7);
+					pg.image(img_text,0,0);	
+				pg.popMatrix();
+			} 
 						
 			if(rain_group!=null) rain_group.draw(pg,-80,-RAIN_THRES);
 
 
 			pg.pushMatrix();
 			pg.translate(0,-120);
-				for(AScore score:arr_score) 
+				for(AFlyScore score:arr_score) 
 					if(!score.isDead()) score.draw(pg);
 			pg.popMatrix();
+
+			if(!is_default && (istage==AIslandAction.TURB || istage==AIslandAction.HOUSE)){
+				float score_scale=.3;
+				pg.pushMatrix();
+				pg.translate(0,10);
+				pg.scale(score_scale);
+					ascore.draw(pg,0,0);
+				pg.popMatrix();
+			}
 
 		pg.popMatrix();
 
 		pg.popStyle();
 
 	}
-	void drawTextGraph(){
-		// pg_text=createGraphics(200,52,P3D);
-		// pg_text.beginDraw();
-		// 	pg_text.translate(pg_text.width/2,pg_text.height/2);
-		// 	pg_text.scale(1,2);
-		// 	pg_text.background(0);
-		// 	pg_text.textFont(name_font);
-		// 	pg_text.textSize(18);
-		// 	pg_text.textAlign(CENTER,CENTER);
-		// 	pg_text.fill(255);
-
-		// 	pg_text.text(build_name,0,0);
-		// 	for(int i=0;i<2;++i) pg_text.filter(DILATE);
-
-		// 	pg_text.fill(65,103,177);
-		// 	pg_text.text(build_name,0,0);
-
-		// 	// pg_text.shader(shd_rmv_bg);
-		// 	// pg_text.loadPixels();
-		// 	for(int i=0;i<pg_text.width;++i)
-		// 		for(int j=0;j<pg_text.height;++j){
-		// 			color tcolor=pg_text.get(i,j);
-		// 			if(red(tcolor)<65 || green(tcolor)<103 || blue(tcolor)<177) pg_text.set(i,j,color(0,0));
-		// 			else pg_text.set(i,j,color(tcolor,255));
-		// 		}
-
-		// pg_text.endDraw();
-		// pg_text=getTextGraph(build_name);
-		// img_text=pg_text.textureImage;
-	}
+	
 	void drawBuildGraph(PGraphics pg,PImage[] img_part,float px,float py){
 		
 		pg.pushMatrix();
@@ -347,7 +338,7 @@ class AIsland{
 				ani_house_born.Update();
 				if(ani_house_born.GetPortion()==1){
 					istage=AIslandAction.HOUSE;
-					for(AScore score:arr_score)	score.start();
+					for(AFlyScore score:arr_score)	score.start();
 				} 
 
 				// if(pg_build_born==null) pg_build_born=createGraphics(162,288,P3D);
@@ -365,12 +356,17 @@ class AIsland{
 		
 		
 		// for(AScore score:arr_score) score.update();
-		Iterator<AScore> it=arr_score.iterator();
+		Iterator<AFlyScore> it=arr_score.iterator();
 		while(it.hasNext()){
-			AScore score=it.next();
+			AFlyScore score=it.next();
 			score.update();
-		    if(score.isDead()) it.remove();		        
+		    if(score.isDead()){
+		    	acc_score+=score.mscore;
+		    	ascore.setScore(acc_score);
+		    	it.remove();		        	
+		    } 
 		}
+		ascore.update();
 
 
 		for(ABuildPart part:arr_build_part) 
@@ -379,30 +375,44 @@ class AIsland{
 		if(rain_group!=null) rain_group.update();
 
 	}
-	void triggerMove(int type){
+	int triggerMove(int type){
 
 		// acc_score+=25;
+		if(istage!=AIslandAction.HOUSE) return 0;
 
 		switch(type){
 			case 0: //cat-2
-				if(arr_build_part[2].start()) addScore(25,true);
+				if(arr_build_part[2].start()){
+					addScore(25,true);
+					return 25;	
+				} 
 				break;
 			case 1:	//cat-3
-				if(arr_build_part[3].ipart>1) arr_build_part[3].start();
-				else cat3_light_on=!cat3_light_on;
-				// if(!cat3_light_on) 
-				addScore(25,true);
+				if(arr_build_part[3].ipart>1){
+					if(arr_build_part[3].start()){
+						addScore(25,true);
+						return 25;
+					}
+				}else{
+					cat3_light_on=!cat3_light_on;
+					addScore(25,true);
+					return 25;	
+				} 
 				break;
 			case 2: // rain
 				if(rain_group!=null){
-					if(rain_group.start()) addScore(25,true);
+					if(rain_group.start()){
+						addScore(25,true);
+						return 25;
+					} 
 				}
 				break;
 			default :
-				acc_score-=25;
+				// acc_score-=25;
 				break;	
 		}
 
+		return 0;
 	}
 
 	void triggerTurb(PVector dest_pos){
@@ -428,10 +438,12 @@ class AIsland{
 	}
 
 	void addScore(int add_score,boolean trigger){
-		acc_score+=add_score;
-		AScore score=new AScore(add_score);
+		// acc_score+=add_score;
+		
+		AFlyScore score=new AFlyScore(add_score);
 		arr_score.add(score);
 		if(trigger) score.start();
+
 	}
 }
 

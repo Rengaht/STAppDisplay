@@ -191,8 +191,7 @@ class AvatarMotion{
 	//boolean setPaused(boolean set_pause,boolean trigger_speak){
 	void startTalking(int tindex,boolean isbuild){
 		
-		if(isbuild) speak_bubble.setIndex(tindex);
-		else speak_bubble.setIndex(tindex);
+		speak_bubble.setIndex(tindex);
 		istage=AvatarAction.TALK;
 
 	}
@@ -409,9 +408,11 @@ class AvatarMotion{
 
 			if(mag_dist<AVATAR_THRES.x && mag_dist>AVATAR_SIZE.x*.8){//if(x_dist<AVATAR_THRES.x){
 				if(_motion.readyToTalk() && this.readyToTalk() ){
-					int tindex=(int)random(2)*5;
-					_motion.startTalking(tindex+(int)random(5),false);
-					this.startTalking(tindex+(int)random(5),false);
+					int tindex=(int)random(10);
+
+					boolean tleft=pos.x<_motion.pos.x;
+					_motion.startTalking(tindex*2+(!tleft?1:0),false);
+					this.startTalking(tindex*2+(tleft?1:0),false);
 					return;
 				}
 			} 
@@ -430,7 +431,7 @@ class AvatarMotion{
 			acc.mult(0);
 			acc.add(5,0,0);	
 
-			if(GIRRAFE && !is_giraffe && random(5)<1){
+			if(DO_EASTER_EGG && !is_giraffe && random(5)<1){
 				action_delay=GIRAFFE_SPAN;
 				is_giraffe=true;
 			}
