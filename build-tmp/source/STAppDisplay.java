@@ -672,7 +672,7 @@ class AGameScene extends GameScene{
 	final int MBUILD_PART=4; 
 	final int IBUILD_PART=4;
 	
-	final int ROUND_TIME=240000; //4:00
+	final int ROUND_TIME=296000; //5:00
 	final int ROUND_BREAK_SPAN=5000;
 
 	final int BACKGOUNRD_SPAN_MIN=2; /* interval to change background */
@@ -917,16 +917,7 @@ class AGameScene extends GameScene{
 		} 
 		this.EndGame();
 
-		// back to wait after 3 sec
-		Timer ending_timer=new Timer();
-        TimerTask task=new TimerTask(){
-            @Override
-            public void run(){
-                // connect();
-                Init();
-            }
-        };
-        ending_timer.schedule(task,ROUND_BREAK_SPAN);
+		
 	}
 
 
@@ -1062,7 +1053,9 @@ class AGameScene extends GameScene{
 			if(iback_group!=1 && iback_group!=2){
 				for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
 				for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
-			}
+			}else{
+				for(ASpaceBalloon ball:arr_space_ballon) ball.draw(sub_pg,arr_img_balloon[ball.bindex]);	
+			} 
 			aneoncat.draw(sub_pg);
 		sub_pg.popMatrix();
 
@@ -1149,7 +1142,17 @@ class AGameScene extends GameScene{
 				break;
 
 			case Server_Score_Success:
-				//println("------The End------");
+				// restart game round
+				// back to wait after 3 sec
+				Timer ending_timer=new Timer();
+		        TimerTask task=new TimerTask(){
+		            @Override
+		            public void run(){
+		                // connect();
+		                Init();
+		            }
+		        };
+		        ending_timer.schedule(task,ROUND_BREAK_SPAN);
 				break;
 
 			case Server_LGG:
