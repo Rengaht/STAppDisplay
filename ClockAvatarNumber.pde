@@ -38,13 +38,13 @@ class ClockAvatarNumber{
 										new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1))));
 	}
 	void updateAvatar(int aindex){
-		println("Update Clock Avatar: "+aindex);
+		printlnA("Update Clock Avatar: "+aindex);
 		ClockAvatar _avatar=arr_avatar.get(aindex);
 		_avatar.updatePos(arr_num_pos.get(aindex),
 							new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1)));
 	}
 	void removeAvatar(int aindex){
-		println("Rmv Clock Avatar: "+aindex);
+		printlnA("Rmv Clock Avatar: "+aindex);
 		arr_avatar.get(aindex).gotoDie(anima_pos.GetPortion());
 	}
 	void startChange(){	

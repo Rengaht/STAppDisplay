@@ -29,7 +29,8 @@ public enum GameEventCode{
 	Server_LConnected(201),
 	Server_LRequest_Score(202),
 	Server_Score_Success(203),
-	Server_LGG(204)
+	Server_LGG(204),
+	Server_LClockMode(205)
 	;
 	
 
@@ -82,6 +83,9 @@ public enum GameEventCode{
 				return Server_Score_Success;
 			case 204:
 				return Server_LGG;
+			case 205:
+				return Server_LClockMode;
+
 			case 230:
 				return Server_Set_Face;
 			case 220:

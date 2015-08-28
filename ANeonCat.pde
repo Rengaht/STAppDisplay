@@ -88,11 +88,11 @@ class ANeonCat{
 				_ang=random(-PI/4,0);
 				break;
 			case 1:
-				_origin=new PVector(Right_Screen_X+random(20),random(150,300));	
+				_origin=new PVector(Global_Param.Right_Screen_X+random(20),random(150,300));	
 				_ang=random(-PI/4,0);
 				break;
 			case 2:
-				_origin=new PVector(Right_Screen_X+random(20),random(-150,-10));	
+				_origin=new PVector(Global_Param.Right_Screen_X+random(20),random(-150,-10));	
 				_ang=random(0,PI/4);
 				break;
 			case 3:

@@ -58,7 +58,7 @@ class BGameScene extends GameScene{
 				String _fn=DataFolder+"TRANSCAR/car"+nf(i+1,2)+"_/car/car"+nf(i+1,2)+"_"+nf(x,5)+".png";
 				PImage _img=loadImage(_fn);
 				(arr_img_car.get(i)).add(_img);
-				println(_fn);
+				printlnA(_fn);
 			}
 		}
 
@@ -69,7 +69,7 @@ class BGameScene extends GameScene{
 				String _fn=DataFolder+"TRANSCAR/car"+nf(i+1,2)+"_/effect/car"+nf(i+1,2)+"_effect_"+nf(x,5)+".png";
 				PImage _img=loadImage(_fn);
 				(arr_img_effect.get(i)).add(_img);
-				println(_fn);
+				printlnA(_fn);
 			}
 		}
 
@@ -149,7 +149,7 @@ class BGameScene extends GameScene{
 
 		super.Init();
 		
-		println("--------- Game B Init ---------");
+		printlnA("--------- Game B Init ---------");
 		
 
 
@@ -257,7 +257,7 @@ class BGameScene extends GameScene{
 				 if(car.arriveGoal()){
 				 	one_arrive=true;
 				 	iwinner=i;
-				 	println("Car "+i+" ARRIVE!!");
+				 	printlnA("Car "+i+" ARRIVE!!");
 				 	break;
 				 }
 			}
@@ -474,7 +474,7 @@ class BGameScene extends GameScene{
 	@Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 
-		println("GameB Got Event: "+event_code.toString());
+		printlnA("GameB Got Event: "+event_code.toString());
 		
 		switch(event_code){
 			case Server_Game_Start:
@@ -504,11 +504,11 @@ class BGameScene extends GameScene{
 
 				break;
 			case Server_LGG:
-				println("------The End------");
+				printlnA("------The End------");
 				this.EndGame();
 				break;
 			default :
-				println("Illegal event: "+event_code.toString());
+				printlnA("Illegal event: "+event_code.toString());
 				break;	
 		}
 
@@ -549,7 +549,7 @@ class BGameScene extends GameScene{
 
 
 		// CAR_DEST_DIST=mov_road_left.duration();
-		println("CAR_DEST_DIST= "+CAR_DEST_DIST);
+		printlnA("CAR_DEST_DIST= "+CAR_DEST_DIST);
 
 		mov_road_loop.stop();
 
@@ -571,12 +571,12 @@ class BGameScene extends GameScene{
 
 		mov_road_left.play();		
 
-		println("Road Length= "+mov_road_left.duration());
+		printlnA("Road Length= "+mov_road_left.duration());
 
 	}
 	void endRound(){
 
-		println("----- End Round -----");
+		printlnA("----- End Round -----");
 		mov_road_left.pause();
 		mov_road_right.pause();
 

@@ -28,14 +28,14 @@ class GameScene{
 
 	}
 	void Load(){
-		println("Load Game.....");
+		printlnA("Load Game.....");
 
 		// if(!finish_load && thread_load==null){
 		// 	thread_load=new Thread(new Runnable(){
 		// 	    public void run(){
 		// 	    	println(".... Start Loading .....");
 			        loadFiles();
-			        println(".... End Loading .....");
+			        printlnA(".... End Loading .....");
 			        finish_load=true;
 			        // Init();
 		// 	    }
@@ -47,7 +47,7 @@ class GameScene{
 		
 		thread_load=null;
 
-		println("Init Game.....");
+		printlnA("Init Game.....");
 		game_state=GameState.WAIT;
 		show_game_over=false;
 		wait_mode=true;
@@ -107,7 +107,7 @@ class GameScene{
 
 	void UnLoad(){
 		
-		println("UnLoad Game.....");
+		printlnA("UnLoad Game.....");
 
 		if(finish_load) unloadFiles();
 		System.gc();

@@ -11,6 +11,8 @@ BuildBlock[] arr_bridge_block;
 PImage img_giraffe;
 	
 class CGameScene extends GameScene{
+	
+	//final String FACE_FOLDER_PATH="F://kerker_face/";
 
 	final String DataFolder="GAME_C/";
 	final int MPEOPLE=20;
@@ -225,16 +227,17 @@ class CGameScene extends GameScene{
 	void Init(){
 		super.Init();
 
-		if(clock_mode){
-			initClockMode();
-			return;
-		}
-
+		// if(clock_mode){
+		// 	initClockMode();
+		// 	return;
+		// }
+		setClockMode(false);
 		
 		// arr_avatar_left=new ArrayList<FaceAvatar>();
 		// arr_avatar_right=new ArrayList<FaceAvatar>();
 
-		arr_avatar=new ArrayList<FaceAvatar>();
+		if(arr_avatar==null) arr_avatar=new ArrayList<FaceAvatar>();
+		else arr_avatar.clear();
 
 		// for(int i=0;i<MPEOPLE/2;++i){
 		// 	arr_avatar_left.add(new FaceAvatar((int)random(12)));	
@@ -246,12 +249,11 @@ class CGameScene extends GameScene{
 		for(int i=0;i<3;++i) back_movie[i].play();
 
 		oldest_index=0;
+		PImage[] arr_default_face=getLatestFace(MPEOPLE);
 		for(int i=0;i<MPEOPLE;++i){
-			// addNewFace("",default_face.get((int)random(MDEFAULT_FACE)),(int)random(12),true);
-			// addNewFace("",default_face.get((int)random(MDEFAULT_FACE)),(int)random(12),false);
-			addNewFace("",default_face.get((int)random(MDEFAULT_FACE)),(int)random(12));
+			addNewFace("",arr_default_face[i],(int)random(12));
 		}
-		println(arr_avatar.size());
+		println("#avatar= "+arr_avatar.size());
 
 		// for(FaceAvatar face:arr_avatar_left){
 		// 	face.mmotion.istage=AvatarAction.WALK;
@@ -263,6 +265,16 @@ class CGameScene extends GameScene{
 		// } 
 		for(FaceAvatar face:arr_avatar) face.mmotion.istage=AvatarAction.WALK;
 
+	}
+	@Override
+	void EndGame(){
+		
+		super.EndGame();
+		
+		for(int i=0;i<3;++i) back_movie[i].stop();
+		for(int i=0;i<3;++i) arr_clock_movie[i].stop();
+
+		arr_avatar.clear();
 	}
 
 	@Override
@@ -474,7 +486,7 @@ class CGameScene extends GameScene{
 
 
 		for(FaceAvatar face:arr_avatar){
-			if(face.getPosX()-AVATAR_SIZE.x/2>Left_Screen_X) continue;
+			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
 			if(face.getDepth()+AVATAR_SIZE.y/2<356)
 				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		} 
@@ -486,7 +498,7 @@ class CGameScene extends GameScene{
 		// } 
 
 		for(FaceAvatar face:arr_avatar){
-			if(face.getPosX()-AVATAR_SIZE.x/2>Left_Screen_X) continue;
+			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
 			if(face.getDepth()+AVATAR_SIZE.y/2>=356)
 				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		} 
@@ -496,7 +508,7 @@ class CGameScene extends GameScene{
 		if(DRAW_DEBUG){
 			if(arr_build==null) return;
 			for(BuildBlock bb:arr_build)
-				if(bb.pos.x<Left_Screen_X) bb.draw(sub_pg);	
+				if(bb.pos.x<Global_Param.Left_Screen_X) bb.draw(sub_pg);	
 		} 
 	}
 
@@ -588,9 +600,9 @@ class CGameScene extends GameScene{
 		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		// } 
 		sub_pg.pushMatrix();
-		sub_pg.translate(-Right_Screen_X,0);
+		sub_pg.translate(-Global_Param.Right_Screen_X,0);
 		for(FaceAvatar face:arr_avatar){
-			if(face.getPosX()+AVATAR_SIZE.x/2<Right_Screen_X) continue;
+			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
 			if(face.getDepth()+AVATAR_SIZE.y/2<285)
 				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		} 
@@ -602,9 +614,9 @@ class CGameScene extends GameScene{
 		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		// } 
 		sub_pg.pushMatrix();
-		sub_pg.translate(-Right_Screen_X,0);
+		sub_pg.translate(-Global_Param.Right_Screen_X,0);
 		for(FaceAvatar face:arr_avatar){
-			if(face.getPosX()+AVATAR_SIZE.x/2<Right_Screen_X) continue;
+			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
 			if(face.getDepth()+AVATAR_SIZE.y/2>=285)
 				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		} 
@@ -612,7 +624,7 @@ class CGameScene extends GameScene{
 		if(DRAW_DEBUG){
 			if(arr_build!=null)
 			for(BuildBlock bb:arr_build)
-				if(bb.pos.x>=Right_Screen_X) bb.draw(sub_pg);	
+				if(bb.pos.x>=Global_Param.Right_Screen_X) bb.draw(sub_pg);	
 		} 
 		sub_pg.popMatrix();
 
@@ -631,9 +643,9 @@ class CGameScene extends GameScene{
 		sub_pg.image(back_movie[1],0,0);
 
 		sub_pg.pushMatrix();
-		sub_pg.translate(-Left_Screen_X,0);
+		sub_pg.translate(-Global_Param.Left_Screen_X,0);
 		for(FaceAvatar face:arr_avatar){
-			if(face.getPosX()-AVATAR_SIZE.x/2>Right_Screen_X || face.getPosX()+AVATAR_SIZE.x/2<Left_Screen_X) continue;
+			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Right_Screen_X || face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Left_Screen_X) continue;
 			
 			face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		} 
@@ -641,7 +653,7 @@ class CGameScene extends GameScene{
 		if(DRAW_DEBUG){
 			if(arr_build!=null)
 			for(BuildBlock bb:arr_build)
-				if(bb.pos.x<Right_Screen_X && bb.pos.x>=Left_Screen_X) bb.draw(sub_pg);	
+				if(bb.pos.x<Global_Param.Right_Screen_X && bb.pos.x>=Global_Param.Left_Screen_X) bb.draw(sub_pg);	
 		} 
 
 		sub_pg.popMatrix();
@@ -659,7 +671,7 @@ class CGameScene extends GameScene{
 	@Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
-		println("GameC Got Event: "+event_code.toString());
+		printlnA("GameC Got Event: "+event_code.toString());
 		switch(event_code){
 			case Server_Set_Face:
 				show_qrcode=false;
@@ -667,10 +679,16 @@ class CGameScene extends GameScene{
 				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
 			case Server_LGG:
-				println("------The End------");
+				printlnA("------The End------");
+				EndGame();
 				break;
+			case Server_LClockMode:
+				printlnA("------Clock Mode------");
+				setClockMode(true);
+				break;
+
 			default :
-				println("illegal event: "+event_code.toString());
+				printlnA("illegal event: "+event_code.toString());
 				break;	
 		}
 
@@ -699,7 +717,7 @@ class CGameScene extends GameScene{
 	}
 	void setFace(TypedHashMap<Byte,Object> params){
 
-		println("GameC: set face");
+		printlnA("GameC: set face");
 		if(!wait_mode) wait_mode=true;
 
 		String user_id=(String)params.get((byte)100);
@@ -711,7 +729,7 @@ class CGameScene extends GameScene{
 
 		final Base64 base64=new Base64();
 		byte[] image_bytes=base64.decode(encoded_image);
-		String file_name="F://kerker_face/user_"+user_id+".png";
+		String file_name=Global_Param.CGame_File_Folder+"user_"+user_id+".png";
 		saveImage(file_name,image_bytes);
 
 		//PImage img=loadImage(file_path);
@@ -744,8 +762,8 @@ class CGameScene extends GameScene{
 			} 
 			if(face.mmotion.istage!=AvatarAction.WALK) continue;
 
-			if(face.getPosX()<Left_Screen_X) arr_left.add(face);
-			else if(face.getPosX()>Right_Screen_X) arr_right.add(face);
+			if(face.getPosX()<Global_Param.Left_Screen_X) arr_left.add(face);
+			else if(face.getPosX()>Global_Param.Right_Screen_X) arr_right.add(face);
 		
 		}
 		
@@ -811,20 +829,20 @@ class CGameScene extends GameScene{
 	    	File file=new File(image_file_path);
 	    	FileOutputStream fos=new FileOutputStream(file);
 	        
-	    	System.out.println("save image "+file.getPath());
+	    	printlnA("save image "+file.getPath());
 
 	        fos.write(image_byte_array,0,image_byte_array.length);
 	        fos.flush();
 	        fos.close();
 
     	}catch(Exception e){
-    		System.out.println("Save Image Error!\n"+e);
+    		printlnA("Save Image Error!\n"+e);
     	}
 	
 	}
-    void toggleClockMode(){
-    	clock_mode=!clock_mode;
-    	if(clock_mode){
+	void setClockMode(boolean set_mode){
+		clock_mode=set_mode;
+		if(clock_mode){
     		show_qrcode=false;	
     		initClockMode();
     	}else{
@@ -833,7 +851,11 @@ class CGameScene extends GameScene{
 				num.pause();
 			}
     	}
+		
+	}
 
+    void toggleClockMode(){
+    	setClockMode(!clock_mode);
     }
 	void initClockMode(){
 		
@@ -901,7 +923,7 @@ class CGameScene extends GameScene{
 		for(int i=0;i<_mavatar;++i){
 			ClockAvatar _avatar=clock_num.getAvatar(i);
 			PImage img_body=clock_people_movie.get(_avatar.icharacter).get(cur_frame);
-			if(img_body==null) println("image null: "+_avatar.icharacter+"-"+cur_frame);
+			if(img_body==null) printlnA("image null: "+_avatar.icharacter+"-"+cur_frame);
 			_avatar.draw(pg,img_body,ani_pos,ani_change);
 			// _avatar.draw(pg,people_movie.get(_avatar.icharacter).get(_avatar.getCurFrame()));
 		}
@@ -917,7 +939,7 @@ class CGameScene extends GameScene{
 		
 		int _mavatar=clock_num.getPosSize();
 		int _msrc=clock_num.getAvatarSize();
-		println("Update Clock: "+_msrc+" -> "+_mavatar);
+		printlnA("Update Clock: "+_msrc+" -> "+_mavatar);
 
 		if(_msrc>_mavatar){
 			for(int i=_msrc-1;i>=_mavatar;--i) clock_num.removeAvatar(i);
@@ -935,5 +957,34 @@ class CGameScene extends GameScene{
 
 		return from_findex+_mavatar-1;
 	}
+	PImage[] getLatestFace(int count){
+		PImage[] arr_face=new PImage[count];
 
+		File folder=new File(Global_Param.CGame_File_Folder);
+		File[] afile=folder.listFiles();
+		int mfile=afile.length;
+
+		SortFile[] asort_file=new SortFile[mfile];
+
+		for(int i=0;i<mfile;++i){
+			asort_file[i]=new SortFile(afile[i]);
+		}
+		Arrays.sort(asort_file);
+
+		int cindex=0;
+		while(cindex<count){
+			if(cindex<mfile){
+				String fpath=asort_file[cindex].f.getAbsolutePath();
+				arr_face[cindex]=loadImage(fpath);
+				printlnA("Read Prev Face: "+fpath);	
+			}else{
+				int idp=(int)random(MDEFAULT_FACE);
+				arr_face[cindex]=default_face.get(idp);	
+				printlnA("Read Prev Face: "+"FACE_"+idp);	
+			} 
+			cindex++;
+		}
+
+		return arr_face;
+	}
 }

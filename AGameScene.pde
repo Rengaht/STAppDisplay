@@ -14,10 +14,10 @@ class AGameScene extends GameScene{
 	final int MBUILD_PART=4; 
 	final int IBUILD_PART=4;
 	
-	final int ROUND_TIME=296000; //5:00
-	final int ROUND_BREAK_SPAN=5000;
+	// final int ROUND_TIME=296000; //5:00
+	// final int ROUND_BREAK_SPAN=5000;
 
-	final int BACKGOUNRD_SPAN_MIN=2; /* interval to change background */
+	// final int BACKGOUNRD_SPAN_MIN=2; /* interval to change background */
 
 
 	int mhouse=9;
@@ -27,8 +27,10 @@ class AGameScene extends GameScene{
 	int mray=100;
 	
 	int start_min=0;
-	int iback_group=0;
+	int iback_group=0; // index of background type
+	int ilast_back_group=0; // index of background type
 	PImage[] arr_img_back;
+	FrameAnimation ani_back_change;
 
 	PImage[] arr_img_cloud;
 	PImage[] arr_img_balloon;
@@ -67,7 +69,7 @@ class AGameScene extends GameScene{
 			ArrayList<ArrayList<PImage>> arr_build=new ArrayList<ArrayList<PImage>>();
 			
 			String mpart=DataFolder+"Building/"+char(65+i)+"/"+char(65+i)+"-main.png";
-			println(mpart);
+			printlnA(mpart);
 			PImage img_main=loadImage(mpart);
 			ArrayList<PImage> arr_main=new ArrayList<PImage>();
 			arr_main.add(img_main);
@@ -81,7 +83,7 @@ class AGameScene extends GameScene{
 						for(int a=0;a<60;++a){
 							String fpart=getBuildPartFileName(i,x,y,a);
 							if(fpart!=null){
-								println(fpart);
+								printlnA(fpart);
 								PImage img_part=loadImage(fpart);
 								arr_ani.add(img_part);	
 							}
@@ -89,7 +91,7 @@ class AGameScene extends GameScene{
 					}else{
 						String fpart=getBuildPartFileName(i,x,y,0);
 						if(fpart!=null){
-							println(fpart);
+							printlnA(fpart);
 							PImage img_part=loadImage(fpart);
 							arr_ani.add(img_part);
 						}
@@ -106,6 +108,8 @@ class AGameScene extends GameScene{
 			arr_img_back[i*3+1]=loadImage(DataFolder+"BG/bg_right-"+nf(i+1,1)+".png");
 			arr_img_back[i*3+2]=loadImage(DataFolder+"BG/bg_center-"+nf(i+1,1)+".png");
 		}
+		ani_back_change=new FrameAnimation(90);
+
 		arr_img_cloud=new PImage[3];
 		arr_img_cloud[0]=loadImage(DataFolder+"BG/cloud01.png");
 		arr_img_cloud[1]=loadImage(DataFolder+"BG/cloud02.png");
@@ -147,14 +151,14 @@ class AGameScene extends GameScene{
 		}
 
 		arr_space_ship=new ASpaceShip[2];
-		for(int i=0;i<2;++i) arr_space_ship[i]=new ASpaceShip(i==0?Left_Screen_X:Right_Screen_X,random(45,65));
+		for(int i=0;i<2;++i) arr_space_ship[i]=new ASpaceShip(i==0?Global_Param.Left_Screen_X:Global_Param.Right_Screen_X,random(45,65));
 
 		arr_space_ballon=new ASpaceBalloon[4];
-		for(int i=0;i<4;++i) arr_space_ballon[i]=new ASpaceBalloon((i<2?0:Right_Screen_X)+random(512*(i%2),512+512*(i%2)),384+random(20,100));
+		for(int i=0;i<4;++i) arr_space_ballon[i]=new ASpaceBalloon((i<2?0:Global_Param.Right_Screen_X)+random(512*(i%2),512+512*(i%2)),384+random(20,100));
 		
 		arr_thin_cloud=new ACloud[8];
 		for(int i=0;i<8;++i){
-			arr_thin_cloud[i]=new ACloud((i<4?0:Right_Screen_X)+random(1024),random(120,180));
+			arr_thin_cloud[i]=new ACloud((i<4?0:Global_Param.Right_Screen_X)+random(1024),random(120,180));
 			arr_thin_cloud[i].icloud=2;
 		} 
 
@@ -202,7 +206,7 @@ class AGameScene extends GameScene{
 			fpart=DataFolder+"Building/"+char(65+ibuild)+"/"+char(65+ibuild)+"-"+char(97+icat)+"-"+nf(ipart+1,1)+".png";
 		}
 		// println(fpart);
-		if(fpart==null) println("illegal building part: "+ibuild+"-"+icat+"-"+ipart+"-"+iframe);
+		if(fpart==null) printlnA("illegal building part: "+ibuild+"-"+icat+"-"+ipart+"-"+iframe);
 
 		return fpart;
 	}
@@ -230,7 +234,7 @@ class AGameScene extends GameScene{
 	}
 	void startRound(){
 
-		println("------------ START ROUND ------------");
+		printlnA("------------ START ROUND ------------");
 
 		super.StartGame();
 		round_start_time=millis();
@@ -253,7 +257,7 @@ class AGameScene extends GameScene{
 	}
 	void endRound(){
 
-		println("------------ End Round ------------");		
+		printlnA("------------ End Round ------------");		
 		if(!OFFLINE){
 			photon_client.sendScoreEvent(arr_acc_score[0],arr_acc_score[1],0,0);	
 		} 
@@ -285,7 +289,7 @@ class AGameScene extends GameScene{
 				if(file_name!=null) iland.img_text=loadImage(file_name);
 			}
 		}
-		 
+		
 		
 		for(ACloud acloud:arr_left_acloud) acloud.update();
 		for(ACloud acloud:arr_right_acloud) acloud.update();
@@ -300,9 +304,12 @@ class AGameScene extends GameScene{
 				if(random(500)<1) triggerCat();
 		}
 		/* check backgroudn change routine */
-		if(abs(minute()-start_min)>=BACKGOUNRD_SPAN_MIN){
+		ani_back_change.Update();
+		if(abs(minute()-start_min)>=Global_Param.AGame_Background_Span_Minute){
+			ilast_back_group=iback_group;
 			iback_group=(iback_group+1)%MBACK_GROUP;
 			start_min=minute();
+			ani_back_change.Restart();
 		}
 
 		/* update top score */
@@ -311,16 +318,25 @@ class AGameScene extends GameScene{
 		
 
 		/* check round time */
-		if(game_state==GameState.PLAY && getRoundTime()>=ROUND_TIME) endRound();
+		if(game_state==GameState.PLAY && getRoundTime()>=Global_Param.AGame_Time_Span) endRound();
 
 	}
 
 	@Override
 	void DrawLeftScreen(PGraphics sub_pg){
 
-		// sub_pg.background(50);
+		float tback=ani_back_change.GetPortion();
+		sub_pg.pushStyle();
+		if(tback<1){
+			sub_pg.tint(255,255*(1-tback));
+			sub_pg.image(arr_img_back[ilast_back_group*3],0,0);		
+
+			sub_pg.tint(255,255*(tback));		
+		}
 		sub_pg.image(arr_img_back[iback_group*3],0,0);
-		// for(int i=0;i<mray;++i) arayline[i].draw(sub_pg);
+		sub_pg.popStyle();
+
+
 		if(iback_group!=1 && iback_group!=2){
 			for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
 			for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
@@ -356,10 +372,20 @@ class AGameScene extends GameScene{
 	@Override
 	void DrawRightScreen(PGraphics sub_pg){
 		// sub_pg.background(50);
+		float tback=ani_back_change.GetPortion();
+		sub_pg.pushStyle();
+		if(tback<1){
+			sub_pg.tint(255,255*(1-tback));
+			sub_pg.image(arr_img_back[ilast_back_group*3+1],0,0);		
+
+			sub_pg.tint(255,255*(tback));		
+		}
 		sub_pg.image(arr_img_back[iback_group*3+1],0,0);
+		sub_pg.popStyle();
+		
 
 		sub_pg.pushMatrix();
-		sub_pg.translate(-Right_Screen_X,0);
+		sub_pg.translate(-Global_Param.Right_Screen_X,0);
 			if(iback_group!=1 && iback_group!=2){
 				for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
 				for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
@@ -388,10 +414,19 @@ class AGameScene extends GameScene{
 	@Override
 	void DrawCenterScreen(PGraphics sub_pg){
 
+		float tback=ani_back_change.GetPortion();
+		sub_pg.pushStyle();
+		if(tback<1){
+			sub_pg.tint(255,255*(1-tback));
+			sub_pg.image(arr_img_back[ilast_back_group*3+2],0,0);		
+
+			sub_pg.tint(255,255*(tback));		
+		}
 		sub_pg.image(arr_img_back[iback_group*3+2],0,0);
+		sub_pg.popStyle();
 
 		sub_pg.pushMatrix();
-		sub_pg.translate(-Left_Screen_X,0);
+		sub_pg.translate(-Global_Param.Left_Screen_X,0);
 			if(iback_group!=1 && iback_group!=2){
 				for(ASpaceShip ship:arr_space_ship) ship.draw(sub_pg,img_spaceship);
 				for(AStar astar:arr_star) astar.draw(sub_pg,img_star);
@@ -401,7 +436,7 @@ class AGameScene extends GameScene{
 			aneoncat.draw(sub_pg);
 		sub_pg.popMatrix();
 
-
+ 
 		sub_pg.pushStyle();
 		// sub_pg.imageMode(CENTER);
 		sub_pg.textAlign(CENTER);
@@ -409,7 +444,7 @@ class AGameScene extends GameScene{
 		sub_pg.stroke(255,255,0);
 		sub_pg.textFont(timer_font,100);	
 
-			int rtime=(game_state==GameState.PLAY)?floor((ROUND_TIME-getRoundTime())/1000):0;
+			int rtime=(game_state==GameState.PLAY)?floor((Global_Param.AGame_Time_Span-getRoundTime())/1000):0;
 			int rmin=floor(rtime/60);
 			int rsec=rtime%60;
 					
@@ -431,7 +466,7 @@ class AGameScene extends GameScene{
 	// @Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
-		println("GameA Got Event: "+event_code.toString());
+		printlnA("GameA Got Event: "+event_code.toString());
 	
 		int left_right=0;
 		AIsland iland=null;
@@ -462,7 +497,7 @@ class AGameScene extends GameScene{
 					str_name=new String(bytes_name, "UTF-8");					
 
 				}catch(Exception e){
-					println("convert name error: "+e);
+					printlnA("convert name error: "+e);
 				}
 				setHouseName(iland,str_name,(Integer)params.get((byte)2));
 				break;
@@ -494,15 +529,15 @@ class AGameScene extends GameScene{
 		                Init();
 		            }
 		        };
-		        ending_timer.schedule(task,ROUND_BREAK_SPAN);
+		        ending_timer.schedule(task,Global_Param.AGame_Round_Break_Span);
 				break;
 
 			case Server_LGG:
-				println("------The End------");
+				printlnA("------The End------");
 				this.EndGame();
 				break;
 			default :
-				println("illegal event: "+event_code.toString());
+				printlnA("illegal event: "+event_code.toString());
 				break;	
 		}
 
@@ -537,7 +572,7 @@ class AGameScene extends GameScene{
 		}
 	}
 	void addNewHouse(String user_id,int left_right,boolean is_default){
-		println(">>new house: "+user_id);
+		printlnA(">>new house: "+user_id);
 		int i=-1;
 		if(left_right==1){
 			
@@ -564,12 +599,12 @@ class AGameScene extends GameScene{
 					map_left_island.remove(key_rmv);	
 					map_left_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,0,is_default));		
 
-					println("Remove: "+key_rmv);
+					printlnA("Remove: "+key_rmv);
 				}else{
 					if(is_default){
 						i=map_left_island.size();
 						map_left_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,0,is_default));
-					}else println("NO PLACE TO ADD A NEW HOUSE");
+					}else printlnA("NO PLACE TO ADD A NEW HOUSE");
 				}
 
 			// }
@@ -601,12 +636,12 @@ class AGameScene extends GameScene{
 				map_right_island.remove(key_rmv);	
 				map_right_island.put(user_id,new AIsland(iland._pos.x,iland._pos.y,1,is_default));		
 
-				println("Remove: "+key_rmv);
+				printlnA("Remove: "+key_rmv);
 			}else{
 				if(is_default){
 					i=map_right_island.size();
 					map_right_island.put(user_id,new AIsland((i+.5)*204.8,(i+1)%2*110+180,1,is_default));
-				}else println("NO PLACE TO ADD A NEW HOUSE");
+				}else printlnA("NO PLACE TO ADD A NEW HOUSE");
 			}
 
 			// i=map_right_island.size();
@@ -616,7 +651,7 @@ class AGameScene extends GameScene{
 	}
 	void setHouseName(AIsland iland,String set_name,int ipeople){
 		if(iland==null){
-			println("Illegal House!!");
+			printlnA("Illegal House!!");
 			return;
 		}
 		// drawIlandText(set_name);
@@ -624,7 +659,7 @@ class AGameScene extends GameScene{
 	}
 	void setHousePart(int left_right,AIsland iland,int b1,int p1,int p2,int p3,int p4){
 		if(iland==null){
-			println("Illegal House!!");
+			printlnA("Illegal House!!");
 			return;
 		}
 		int score=iland.setBuilding(b1,p1,p2,p3,p4);
@@ -634,7 +669,7 @@ class AGameScene extends GameScene{
 	}
 	void setHouseTrigger(int left_right,AIsland iland,int type_trig){
 		if(iland==null){
-			println("Illegal House!!");
+			printlnA("Illegal House!!");
 			return;
 		}
 		int score=iland.triggerMove(type_trig);
@@ -670,14 +705,14 @@ class AGameScene extends GameScene{
 			else //people
 				img=arr_img_people[build_part.ipart];
 		}catch(Exception e){
-			println(e.toString());
-			println("build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart);
+			printlnA(e.toString());
+			printlnA("build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart);
 			return null;
 		}
 
 		if(img==null){
-			println("cannot get: build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart+" - "+build_part.getCurFrame());
-			println("file: "+getBuildPartFileName(build_part.ibuild,build_part.icat,build_part.ipart,build_part.getCurFrame()));
+			printlnA("cannot get: build part: "+build_part.ibuild+" - "+build_part.icat+" - "+build_part.ipart+" - "+build_part.getCurFrame());
+			printlnA("file: "+getBuildPartFileName(build_part.ibuild,build_part.icat,build_part.ipart,build_part.getCurFrame()));
 		} 
 
 		return img;

@@ -49,3 +49,7 @@ Temporary Items
 *.mp4
 *.vlw
 *.db
+*.frag
+*.glsl
+*.jar
+*.dll

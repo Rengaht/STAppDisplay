@@ -419,7 +419,7 @@ class AIsland{
 		
 		if(istage==AIslandAction.HOUSE){
 			
-			println("Trigger Turb!");
+			printlnA("Trigger Turb!");
 
 			pos_turb_dest=dest_pos.get();
 			pos_turb_src=_pos.get();
@@ -481,7 +481,7 @@ class ABuildPart{
 		img_seq.reset();
 	}
 	boolean start(){
-		println("Part Start!");
+		printlnA("Part Start!");
 		if(!img_seq.isplaying){
 			img_seq.play();
 			return true;	

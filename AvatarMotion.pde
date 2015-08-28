@@ -44,7 +44,7 @@ class AvatarMotion{
 	PVector getRandomBornPlace(){
 		float _posx=random(200,824);
 		float _posy=random(120,300);
-		if(random(2)<1) _posx+=Right_Screen_X;
+		if(random(2)<1) _posx+=Global_Param.Right_Screen_X;
 
 		return new PVector(_posx,_posy);		
 	}
@@ -310,12 +310,12 @@ class AvatarMotion{
 	}
 	boolean goBridge(){
 		if(istage==AvatarAction.WALK){
-			if(pos.x<Left_Screen_X){
+			if(pos.x<Global_Param.Left_Screen_X){
 				bridge_vel=1;
 				istage=AvatarAction.BRIDGE;
 				return true;
 			}
-			if(pos.x>Right_Screen_X){
+			if(pos.x>Global_Param.Right_Screen_X){
 				bridge_vel=-1;
 				istage=AvatarAction.BRIDGE;
 				return true;
@@ -330,7 +330,7 @@ class AvatarMotion{
 
 		if(istage==AvatarAction.WALK){
 			// catch those already on the bridge
-			if(pos.x>Left_Screen_X && pos.x<Right_Screen_X){
+			if(pos.x>Global_Param.Left_Screen_X && pos.x<Global_Param.Right_Screen_X){
 				bridge_vel=random(2)>1?1:-1;
 				istage=AvatarAction.BRIDGE;
 				return;
@@ -359,12 +359,12 @@ class AvatarMotion{
 			}
 		}
 		if(istage==AvatarAction.BRIDGE){
-			if(bridge_vel>0 && pos.x>Right_Screen_X+AVATAR_SIZE.x){
+			if(bridge_vel>0 && pos.x>Global_Param.Right_Screen_X+AVATAR_SIZE.x){
 				istage=AvatarAction.WALK;
 				bridge_vel=0;	
 				action_delay=350;
 			} 
-			if(bridge_vel<0 && pos.x<Left_Screen_X-AVATAR_SIZE.x){
+			if(bridge_vel<0 && pos.x<Global_Param.Left_Screen_X-AVATAR_SIZE.x){
 				istage=AvatarAction.WALK;
 				bridge_vel=0;	
 				action_delay=350;
@@ -437,10 +437,10 @@ class AvatarMotion{
 			}
 		} 
 		
-		if(pos.x<Left_Screen_X){
+		if(pos.x<Global_Param.Left_Screen_X){
 			if(pos.y+AVATAR_SIZE.y/2*depth_scale>MOTION_BOUND_Y[1]) turn_acc.y-=1.5;
 			if(pos.y-AVATAR_SIZE.y/2*depth_scale<MOTION_BOUND_Y[0]) turn_acc.y+=1.5;
-		}else if(pos.x<Right_Screen_X){
+		}else if(pos.x<Global_Param.Right_Screen_X){
 			if(pos.y+AVATAR_SIZE.y/2*depth_scale>MOTION_BOUND_Y[3]) turn_acc.y-=1.5;
 			if(pos.y-AVATAR_SIZE.y/2*depth_scale<MOTION_BOUND_Y[2]) turn_acc.y+=1.5;
 		

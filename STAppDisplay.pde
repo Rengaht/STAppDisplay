@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Calendar;
+import java.util.Arrays;
 
 import processing.video.*;
 
@@ -17,9 +18,19 @@ boolean OFFLINE=true;
 final int MGAME=3;
 boolean DO_EASTER_EGG=false;
 
-final int Left_Screen_X=1024;
-final int Right_Screen_X=3056;
+final boolean DRAW_FRAME=true;
+final boolean WRITE_LOG=true;
+PrintWriter log_output;
 
+
+final float ORIGIN_DISPLAY_WIDTH=4080;
+final float ORIGIN_DISPLAY_HEIGHT=376;
+
+final String PARAM_FILE_PATH="stapp_display_params.json";
+GlobalParameter Global_Param;
+
+// final int Left_Screen_X=1024;
+// final int Right_Screen_X=3056;
 
 PhotonClient photon_client;
 Thread photon_thread;
@@ -34,13 +45,46 @@ PImage img_qrcode_android,img_qrcode_ios;
 
 PShader shd_rmv_bg;
 
+PVector scale_to_screen;
 
+
+public void init(){
+	if(!DRAW_FRAME){
+		// to make a frame not displayable, you can
+		// use frame.removeNotify()		
+		frame.removeNotify();
+		frame.setUndecorated(true);
+
+		// addNotify, here i am not sure if you have 
+		// to add notify again.  
+		frame.addNotify();
+	}
+	super.init();
+
+}
 void setup(){
-
-	size(2048,560,P3D);
-	gapplet=this;
-
 	
+	frame.setLocation(0,0);
+
+	Global_Param=new GlobalParameter(PARAM_FILE_PATH);
+	Global_Param.readParameters();
+
+	scale_to_screen=new PVector(Global_Param.Display_Size.x/ORIGIN_DISPLAY_WIDTH,Global_Param.Display_Size.y/ORIGIN_DISPLAY_HEIGHT);
+
+	frameRate(60);
+	size((int)Global_Param.Window_Size.x,(int)Global_Param.Window_Size.y,P3D);
+
+
+	gapplet=this;
+	
+	if(WRITE_LOG){
+		String log_name="log/STDisplayLog_"+year()+nf(month(),2)+nf(day(),2)+nf(hour(),2)+nf(minute(),2)+".txt";
+		println("Create Log: "+log_name);
+		log_output=createWriter(log_name);	
+		printlnA("STDisplay Start!");
+		//initLogger(log_name,"ALL");
+	} 
+
 
 	/* for Photon SDK*/
 	Security.addProvider(new BouncyCastleProvider());
@@ -66,14 +110,13 @@ void setup(){
 
 	// println(agame_scene[6]);
 	font=loadFont("GameOver_Font.vlw");
-	textFont(font, 40);
+	textFont(font, 20);
 	
 	name_font=loadFont("Combined-Bold-22.vlw");
 	timer_font=loadFont("Timer_Font.vlw");
 
 	shd_rmv_bg=loadShader("Rmv_Black.glsl");
 	
-
 
 	background(0);
 	
@@ -82,25 +125,24 @@ void setup(){
 
 
 void draw(){
-
 	
+	background(0);
 
-	// if(mousePressed) photon_client.sendSomeEvent();
+	scale_to_screen.x=Global_Param.Display_Size.x/ORIGIN_DISPLAY_WIDTH;
+	scale_to_screen.y=Global_Param.Display_Size.y/ORIGIN_DISPLAY_HEIGHT;
 
-	float scale_to_screen=1;//(float)displayWidth/4060.0;
-	
-	
 
+	String str_log="";
 
 	boolean all_loaded=true;
 	for(int i=0;i<MGAME;++i){
 		if(agame_scene[i]!=null && !agame_scene[i].finish_load) all_loaded=false;
 	}
 	if(!all_loaded){
-		background(0);
-		String load_str="LOADING";
-		for(int i=0;i<(frameCount/10)%5;++i) load_str+=".";
-		text(load_str,20,height/2);
+		
+		str_log+="LOADING";
+		for(int i=0;i<(frameCount/10)%5;++i) str_log+=".";
+		str_log+="\n";
 	}else{
 
 		if(!OFFLINE && photon_client==null){
@@ -110,35 +152,38 @@ void draw(){
 		}
 		
 		if(igame_scene<0){
-			String no_str="NO GAME";
-			for(int i=0;i<(frameCount/10)%5;++i) no_str+=".";
-			text(no_str,20,height/2+50);
-		
-			return;	
+			str_log+="NO GAME";
+			for(int i=0;i<(frameCount/10)%5;++i) str_log+=".";
+			str_log+="\n";
+
+			
+		}else{
+			
+			pushMatrix();
+			translate(Global_Param.Display_Loc.x,Global_Param.Display_Loc.y);
+			scale(scale_to_screen.x,scale_to_screen.y);
+
+			agame_scene[igame_scene].SUpdate();
+			agame_scene[igame_scene].Draw();
+			agame_scene[igame_scene].DrawOnGraph(this.g);
+
+			popMatrix();
 		}
-
-		pushMatrix();
-		scale(scale_to_screen);
-
-		agame_scene[igame_scene].SUpdate();
-		agame_scene[igame_scene].Draw();
-		agame_scene[igame_scene].DrawOnGraph(this.g);
-
-		popMatrix();
 	}
-
-	
-	
 
 
 	frame.setTitle(String.valueOf(frameRate));
 
 	if(DRAW_DEBUG){
-		if(OFFLINE){
-			text("OFFLINE",1064,500);
-		}else{
-			text("ONLINE",1064,500);
-		}
+		if(OFFLINE) str_log+="OFFLINE\n";
+		else str_log+="ONLINE\n";
+		
+		str_log+="Display Loc:   "+Global_Param.Display_Loc.x+" , "+Global_Param.Display_Loc.y;
+		str_log+="\nDisplay Size:  "+Global_Param.Display_Size.x+" , "+Global_Param.Display_Size.y;
+
+		str_log+="\nDisplay Scale: "+scale_to_screen.x+" , "+scale_to_screen.y;
+		fill(255,0,0);
+		text(str_log,20,height-100);
 	}
 
 	// if(mousePressed) saveFrame("STApp_cap_#####.png");
@@ -148,11 +193,10 @@ void draw(){
 
 void setGame(int game_index){
 	// game_index-=101;
-	if(game_index<0 || game_index>MGAME-1) return;
 
-	println("Set Game : "+game_index);
-	
-	// if(igame_scene>-1 && game_index!=igame_scene) agame_scene[igame_scene].UnLoad();
+	printlnA("Set Game : "+game_index);
+
+	if(game_index<0 || game_index>MGAME-1) return;
 
 	
 	
@@ -164,6 +208,14 @@ void setGame(int game_index){
 
 }
 
+void printlnA(String str_print){
+	println(str_print);
+	log_output.println(getTimeStamp()+str_print);
+}
+
+String getTimeStamp(){
+	return nf(hour(),2)+nf(minute(),2)+nf(second(),2)+"  ";
+}
 
 void keyPressed(){
 	switch(key){
@@ -195,20 +247,8 @@ void keyPressed(){
 
 		case 'c':
 			if(igame_scene==2) ((CGameScene)agame_scene[2]).toggleClockMode();
-			else if(igame_scene==1) ((BGameScene)agame_scene[1]).arr_car[1].updatePosition(-1);
 			break;
-		
-		
-		case 'z':
-			if(igame_scene==1) ((BGameScene)agame_scene[1]).arr_car[0].updatePosition(-1);
-			break;
-		case 'x':
-			if(igame_scene==1) ((BGameScene)agame_scene[1]).arr_car[0].updatePosition(1);
-			break;
-		case 'v':
-			if(igame_scene==1) ((BGameScene)agame_scene[1]).arr_car[1].updatePosition(1);
-			break;
-
+	
 		case 's':
 			if(igame_scene==1) ((BGameScene)agame_scene[1]).StartGame();
 			if(igame_scene==0) ((AGameScene)agame_scene[0]).triggerBuilding();
@@ -226,8 +266,44 @@ void keyPressed(){
 		case 'e':
 			DO_EASTER_EGG=!DO_EASTER_EGG;
 			break;
-	}
 
+		case 'Z':
+			if(DRAW_DEBUG) Global_Param.Display_Size.x+=1;
+			break;
+		case 'X':
+			if(DRAW_DEBUG) Global_Param.Display_Size.x-=1;
+			break;
+		case 'Q':
+			if(DRAW_DEBUG) Global_Param.Display_Size.y+=1;
+			break;
+		case 'W':
+			if(DRAW_DEBUG) Global_Param.Display_Size.y-=1;
+			break;
+
+		case 'S':
+			if(DRAW_DEBUG) Global_Param.saveParameters();
+			break;
+		case 'R':
+			if(DRAW_DEBUG) Global_Param.readParameters();
+			break;
+		
+	}
+	if(key==CODED){
+    	switch(keyCode){
+	    	case UP:
+	    		if(DRAW_DEBUG) Global_Param.Display_Loc.y-=1;			
+	    		break;
+	    	case DOWN:
+	    		if(DRAW_DEBUG) Global_Param.Display_Loc.y+=1;			
+	    		break;
+	    	case LEFT:
+	    		if(DRAW_DEBUG) Global_Param.Display_Loc.x-=1;			
+	    		break;
+	    	case RIGHT:
+	    		if(DRAW_DEBUG) Global_Param.Display_Loc.x+=1;			
+	    		break;
+    	}
+    }
 }
 
 
@@ -275,4 +351,15 @@ String drawIlandText(String build_name,int left_right){
 	// saveStrings("tag_str_"+nf(frameCount,5),new String[]{build_name});
 	return file_name;
 
+}
+
+
+void exit(){
+
+  println("PROGRAM EXIT!");
+  if(WRITE_LOG){
+	  log_output.flush();  // Writes the remaining data to the file
+	  log_output.close();  // Finishes the file
+  }
+  super.exit();
 }

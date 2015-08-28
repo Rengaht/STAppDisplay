@@ -236,7 +236,7 @@ class EnergyCar{
 	void stopRun(){
 		start_run=false;
 		ani_end_transform.Restart();
-		println("car stop run!!");
+		printlnA("car stop run!!");
 
 	}
 	void updatePosition(int delta_position){
@@ -293,7 +293,7 @@ class EnergyCar{
 		seq_car.play();
 		
 
-		println("-- change car to "+iset_car);
+		printlnA("-- change car to "+iset_car);
 	}
 	void drawMotion(){
 

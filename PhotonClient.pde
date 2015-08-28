@@ -3,8 +3,8 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
-// final String SERVER_IP="kerkerker.artgital.com:5055";
-final String SERVER_IP="192.168.2.227:5055";
+final String SERVER_IP="kerkerker.artgital.com:5055";
+//final String SERVER_IP="192.168.2.227:5055";
 final String SERVER_NAME="STPhotonServer";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
@@ -21,12 +21,12 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	@Override
 	public void run(){
 		if(this.connect()){
-			println("Start Running!");
+			printlnA("Start Running!");
 			while(true){
 				try{
 	               this.loadBalancingPeer.service();
 	            }catch(Exception e){
-                    println("service error: "+e);
+                    printlnA("service error: "+e);
                 }
 				try{
 					Thread.sleep(40);
@@ -44,12 +44,12 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                         }
                     };
                     timer.schedule(task, 3000);
-                    println(">>> Reconnect in 3 sec");
+                    printlnA(">>> Reconnect in 3 sec");
                     isReconnecting=true;
                 }
 			}
 		}else{
-			println("Connection Fail!");
+			printlnA("Connection Fail!");
 		}
 		
 	}
@@ -71,7 +71,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void sendScoreEvent(int score1,int score2){
 
 
-        println("--------- Send Score : "+score1+" / "+score2+" ----------");
+        printlnA("--------- Send Score : "+score1+" / "+score2+" ----------");
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         eventContent.put((byte)1, score1);              
         eventContent.put((byte)2, score2);              
@@ -81,7 +81,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void sendScoreEvent(int score1,int score2,int icar1,int icar2){
 
 
-        println("--------- Send Score : "+score1+" / "+score2+" ----------");
+        printlnA("--------- Send Score : "+score1+" / "+score2+" ----------");
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         eventContent.put((byte)1, score1);              
         eventContent.put((byte)2, score2);              
@@ -93,7 +93,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void sendStartRunEvent(){
 
 
-        println("--------- Send Start Run -----------");
+        printlnA("--------- Send Start Run -----------");
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
@@ -114,15 +114,15 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void onStatusChanged(StatusCode statusCode){
         super.onStatusChanged(statusCode);
         
-        println("OnStatusChanged: "+statusCode.name());
+        printlnA("OnStatusChanged: "+statusCode.name());
         
         switch(statusCode){
             case Connect:
-                println("Connect!");
+                printlnA("Connect!");
                 is_connected=true;
                 break;
             case Disconnect:
-                println("Disconnect!");
+                printlnA("Disconnect!");
                 is_connected=false;
                 isReconnecting=false;
                 break;
@@ -141,17 +141,17 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         // println("got event!");
         // println(eventData.Code);
         GameEventCode rcv_event=GameEventCode.fromInt(eventData.Code.intValue());
-        println("--------------------\nEvent: "+rcv_event.toString()+"  "+millis());
+        printlnA("--------------------\nEvent: "+rcv_event.toString()+"  "+millis());
 
 
         TypedHashMap<Byte,Object> params=eventData.Parameters;
 
-        if(params!=null){
-            for(Entry<Byte,Object> entry:params.entrySet()){
-                println(entry.getKey()+" -> "+entry.getValue());
-            }
-        }else println("No Parmeters!");
-         println("--------------------\n");
+        // if(params!=null){
+        //     for(Entry<Byte,Object> entry:params.entrySet()){
+        //         printlnA(entry.getKey()+" -> "+entry.getValue());
+        //     }
+        // }else printlnA("No Parmeters!");
+        //  printlnA("--------------------\n");
         
         try{
             switch(rcv_event){
@@ -177,7 +177,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
               
                 
         }catch(Exception e){
-            println(e);
+            printlnA(e.toString());
 
         }
        // 
@@ -197,7 +197,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
         
         GameEventCode rcv_event=GameEventCode.fromInt((int)operationResponse.OperationCode);
 
-        println("--------------------\nOpResponse: "+rcv_event.toString()+"  "+millis());
+        printlnA("--------------------\nOpResponse: "+rcv_event.toString()+"  "+millis());
 
         switch(rcv_event){
             case Server_Login_Success:
@@ -208,15 +208,16 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                 break;
             case Server_LConnected:
                 setGame((Integer)params.get((byte)1));
-                println("Connected as LED");
+                printlnA("Connected as LED");
                 break;
-            // case Server_Score_Success:
-            //     println("Set Score Success");
-            //     break;
+            case Server_Score_Success:
+                //println("Set Score Success");
+                agame_scene[igame_scene].HandleEvent(rcv_event,params);
+                break;
             default :
-                println("--------------------\nUnhandled Operation: "+rcv_event.toString()+"  "+millis());
+                printlnA("--------------------\nUnhandled Operation: "+rcv_event.toString()+"  "+millis());
                 for(Entry<Byte,Object> entry:params.entrySet()){
-                    println(entry.getKey()+" -> "+entry.getValue());
+                    printlnA(entry.getKey()+" -> "+entry.getValue());
                 }
                 break;    
         }
