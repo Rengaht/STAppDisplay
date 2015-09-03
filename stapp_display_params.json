@@ -1,0 +1,16 @@
+{
+  "Display_Loc_X": 0,
+  "Left_Screen_X": 1024,
+  "Display_Loc_Y": 0,
+  "Right_Screen_X": 3056,
+  "Server_Name": "STPhotonServer",
+  "Window_Size_Y":1080,
+  "CGame_File_Folder": "D://kerker_face",
+  "Window_Size_X": 2048,
+  "Server_Ip": "kerkerker.artgital.com:5055",
+  "Display_Size_Y":1080,
+  "AGame_Background_Span_Minute": 2,
+  "AGame_Round_Break_Span": 5000,
+  "Display_Size_X": 2048,
+  "AGame_Time_Span": 596000
+}

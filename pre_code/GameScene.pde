@@ -1,8 +1,8 @@
 class GameScene{
 	
-	final int[] Left_Screen_Rect={0,0,1024,384};
-	final int[] Center_Screen_Rect={1024,0,2032,176};
-	final int[] Right_Screen_Rect={3056,0,1024,384};
+	final int[] Left_Screen_Rect={0,176,1024,384};
+	final int[] Center_Screen_Rect={0,0,2032,176};
+	final int[] Right_Screen_Rect={1024,176,1024,384};
 
 	PGraphics pg;
 	PGraphics left_pg,right_pg,center_pg;
@@ -28,14 +28,14 @@ class GameScene{
 
 	}
 	void Load(){
-		println("Load Game.....");
+		printlnA("Load Game.....");
 
 		// if(!finish_load && thread_load==null){
 		// 	thread_load=new Thread(new Runnable(){
 		// 	    public void run(){
 		// 	    	println(".... Start Loading .....");
 			        loadFiles();
-			        println(".... End Loading .....");
+			        printlnA(".... End Loading .....");
 			        finish_load=true;
 			        // Init();
 		// 	    }
@@ -47,7 +47,7 @@ class GameScene{
 		
 		thread_load=null;
 
-		println("Init Game.....");
+		printlnA("Init Game.....");
 		game_state=GameState.WAIT;
 		show_game_over=false;
 		wait_mode=true;
@@ -81,7 +81,7 @@ class GameScene{
 		
 
 		pg.beginDraw();
-		pg.scale(scale_to_screen.x,scale_to_screen.y);
+		
 		pg.image(left_pg,Left_Screen_Rect[0],Left_Screen_Rect[1]);
 		pg.image(right_pg,Right_Screen_Rect[0],Right_Screen_Rect[1]);
 		pg.image(center_pg,Center_Screen_Rect[0],Center_Screen_Rect[1]);
@@ -107,7 +107,7 @@ class GameScene{
 
 	void UnLoad(){
 		
-		println("UnLoad Game.....");
+		printlnA("UnLoad Game.....");
 
 		if(finish_load) unloadFiles();
 		System.gc();

@@ -14,11 +14,11 @@ import java.util.Arrays;
 import processing.video.*;
 
 boolean DRAW_DEBUG=false;
-boolean OFFLINE=false;
+boolean OFFLINE=true;
 final int MGAME=3;
 boolean DO_EASTER_EGG=false;
 
-final boolean DRAW_FRAME=false;
+final boolean DRAW_FRAME=true;
 final boolean WRITE_LOG=true;
 PrintWriter log_output;
 
@@ -73,8 +73,7 @@ void setup(){
 
 	frameRate(60);
 	size((int)Global_Param.Window_Size.x,(int)Global_Param.Window_Size.y,P3D);
-      
-        noCursor();
+
 
 	gapplet=this;
 	
@@ -162,7 +161,7 @@ void draw(){
 			
 			pushMatrix();
 			translate(Global_Param.Display_Loc.x,Global_Param.Display_Loc.y);
-			//scale(scale_to_screen.x,scale_to_screen.y);
+			scale(scale_to_screen.x,scale_to_screen.y);
 
 			agame_scene[igame_scene].SUpdate();
 			agame_scene[igame_scene].Draw();
@@ -185,7 +184,6 @@ void draw(){
 		str_log+="\nDisplay Scale: "+scale_to_screen.x+" , "+scale_to_screen.y;
 		fill(255,0,0);
 		text(str_log,20,height-100);
-                text(frameRate,1024,height-100);
 	}
 
 	// if(mousePressed) saveFrame("STApp_cap_#####.png");

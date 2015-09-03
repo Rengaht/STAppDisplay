@@ -150,17 +150,17 @@ class ClockAvatar{
 		// 		  ctrl_src.x*POS_WID,ctrl_src.y*POS_HEI,
 		// 		  ctrl_dest.x*POS_WID,ctrl_dest.y*POS_HEI,
 		// 		  pos_src.x*POS_WID,pos_src.y*POS_HEI);
-                
+
 		pg.pushMatrix();
 		pg.translate(cur_x*POS_WID,cur_y*POS_HEI+(icharacter>9?8:0));
 			pg.pushMatrix();
 			pg.scale(.4);
-			if(img_face!=null) pg.image(img_face,0,-28);				
+				pg.image(img_face,0,-28);				
 			pg.popMatrix();
 
 			pg.pushMatrix();
 			pg.scale(.95);
-			if(img_body!=null) pg.image(img_body,0,0);
+				pg.image(img_body,0,0);
 			pg.popMatrix();
 		pg.popMatrix();
 

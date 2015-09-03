@@ -69,7 +69,7 @@ class AGameScene extends GameScene{
 			ArrayList<ArrayList<PImage>> arr_build=new ArrayList<ArrayList<PImage>>();
 			
 			String mpart=DataFolder+"Building/"+char(65+i)+"/"+char(65+i)+"-main.png";
-			println(mpart);
+			printlnA(mpart);
 			PImage img_main=loadImage(mpart);
 			ArrayList<PImage> arr_main=new ArrayList<PImage>();
 			arr_main.add(img_main);
@@ -475,8 +475,7 @@ class AGameScene extends GameScene{
 
 		switch(event_code){
 			case Server_Start_Run:
-				//if((Integer)params.get((byte)1)==1) 
-                                startRound();
+				if((Integer)params.get((byte)1)==1) startRound();
 				break;
 
 			case Server_Add_House:
@@ -522,16 +521,15 @@ class AGameScene extends GameScene{
 			case Server_Score_Success:
 				// restart game round
 				// back to wait after 3 sec
-//				Timer ending_timer=new Timer();
-//		        TimerTask task=new TimerTask(){
-//		            @Override
-//		            public void run(){
-//		                // connect();
-//		                Init();
-//		            }
-//		        };
-		       // ending_timer.schedule(task,Global_Param.AGame_Round_Break_Span);
-                                this.EndGame();
+				Timer ending_timer=new Timer();
+		        TimerTask task=new TimerTask(){
+		            @Override
+		            public void run(){
+		                // connect();
+		                Init();
+		            }
+		        };
+		        ending_timer.schedule(task,Global_Param.AGame_Round_Break_Span);
 				break;
 
 			case Server_LGG:

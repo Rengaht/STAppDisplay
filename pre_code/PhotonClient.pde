@@ -29,7 +29,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                     printlnA("service error: "+e);
                 }
 				try{
-					Thread.sleep(60);
+					Thread.sleep(40);
 				}catch(InterruptedException e){
 					e.printStackTrace();
 				}	
@@ -146,11 +146,11 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 
         TypedHashMap<Byte,Object> params=eventData.Parameters;
 
-         if(params!=null){
-             for(Entry<Byte,Object> entry:params.entrySet()){
-                 println(entry.getKey()+" -> "+entry.getValue());
-             }
-         }else println("No Parmeters!");
+        // if(params!=null){
+        //     for(Entry<Byte,Object> entry:params.entrySet()){
+        //         printlnA(entry.getKey()+" -> "+entry.getValue());
+        //     }
+        // }else printlnA("No Parmeters!");
         //  printlnA("--------------------\n");
         
         try{

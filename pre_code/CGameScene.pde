@@ -483,30 +483,25 @@ class CGameScene extends GameScene{
 
 
 		
-                try{
 
-        		for(FaceAvatar face:arr_avatar){
-        			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
-        			if(face.getDepth()+AVATAR_SIZE.y/2<356)
-        				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		} 
-        		sub_pg.image(arr_front_building[0],0,0);
-        
-        		// for(FaceAvatar face:arr_avatar_left){
-        		// 	if(face.getDepth()+AVATAR_SIZE.y/2>=356)
-        		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		// } 
-        
-        		for(FaceAvatar face:arr_avatar){
-        			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
-        			if(face.getDepth()+AVATAR_SIZE.y/2>=356)
-        				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		} 
-                }catch(Exception e){
-                 e.printStackTrace(); 
-                  
-                }
 
+		for(FaceAvatar face:arr_avatar){
+			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
+			if(face.getDepth()+AVATAR_SIZE.y/2<356)
+				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		} 
+		sub_pg.image(arr_front_building[0],0,0);
+
+		// for(FaceAvatar face:arr_avatar_left){
+		// 	if(face.getDepth()+AVATAR_SIZE.y/2>=356)
+		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		// } 
+
+		for(FaceAvatar face:arr_avatar){
+			if(face.getPosX()-AVATAR_SIZE.x/2>Global_Param.Left_Screen_X) continue;
+			if(face.getDepth()+AVATAR_SIZE.y/2>=356)
+				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		} 
 		sub_pg.image(arr_front_building[1],0,0);
 
 
@@ -604,38 +599,35 @@ class CGameScene extends GameScene{
 		// 	if(face.getDepth()+AVATAR_SIZE.y/2<285)
 		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
 		// } 
-                try{
-        		sub_pg.pushMatrix();
-        		sub_pg.translate(-Global_Param.Right_Screen_X,0);
-        		for(FaceAvatar face:arr_avatar){
-        			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
-        			if(face.getDepth()+AVATAR_SIZE.y/2<285)
-        				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		} 
-        		sub_pg.popMatrix();
-        
-        		sub_pg.image(arr_front_building[2],0,0);
-        		// for(FaceAvatar face:arr_avatar_right){
-        		// 	if(face.getDepth()+AVATAR_SIZE.y/2>=285)
-        		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		// } 
-        		sub_pg.pushMatrix();
-        		sub_pg.translate(-Global_Param.Right_Screen_X,0);
-        		for(FaceAvatar face:arr_avatar){
-        			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
-        			if(face.getDepth()+AVATAR_SIZE.y/2>=285)
-        				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
-        		} 
-        
-        		if(DRAW_DEBUG){
-        			if(arr_build!=null)
-        			for(BuildBlock bb:arr_build)
-        				if(bb.pos.x>=Global_Param.Right_Screen_X) bb.draw(sub_pg);	
-        		} 
-        		sub_pg.popMatrix();
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
+		sub_pg.pushMatrix();
+		sub_pg.translate(-Global_Param.Right_Screen_X,0);
+		for(FaceAvatar face:arr_avatar){
+			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
+			if(face.getDepth()+AVATAR_SIZE.y/2<285)
+				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		} 
+		sub_pg.popMatrix();
+
+		sub_pg.image(arr_front_building[2],0,0);
+		// for(FaceAvatar face:arr_avatar_right){
+		// 	if(face.getDepth()+AVATAR_SIZE.y/2>=285)
+		// 		face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		// } 
+		sub_pg.pushMatrix();
+		sub_pg.translate(-Global_Param.Right_Screen_X,0);
+		for(FaceAvatar face:arr_avatar){
+			if(face.getPosX()+AVATAR_SIZE.x/2<Global_Param.Right_Screen_X) continue;
+			if(face.getDepth()+AVATAR_SIZE.y/2>=285)
+				face.draw(sub_pg,people_movie.get(face.icharacter).get(face.getCurFrame()),speak_bubble.get(face.getSpeakBubbleIndex()));	
+		} 
+
+		if(DRAW_DEBUG){
+			if(arr_build!=null)
+			for(BuildBlock bb:arr_build)
+				if(bb.pos.x>=Global_Param.Right_Screen_X) bb.draw(sub_pg);	
+		} 
+		sub_pg.popMatrix();
+
 		sub_pg.image(arr_front_building[3],0,0);
 
 	}
@@ -679,7 +671,7 @@ class CGameScene extends GameScene{
 	@Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
-		println("GameC Got Event: "+event_code.toString());
+		printlnA("GameC Got Event: "+event_code.toString());
 		switch(event_code){
 			case Server_Set_Face:
 				show_qrcode=false;
@@ -687,16 +679,16 @@ class CGameScene extends GameScene{
 				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
 			case Server_LGG:
-				println("------The End------");
+				printlnA("------The End------");
 				EndGame();
 				break;
 			case Server_LClockMode:
-				println("------Clock Mode------");
+				printlnA("------Clock Mode------");
 				setClockMode(true);
 				break;
 
 			default :
-				println("illegal event: "+event_code.toString());
+				printlnA("illegal event: "+event_code.toString());
 				break;	
 		}
 
@@ -725,7 +717,7 @@ class CGameScene extends GameScene{
 	}
 	void setFace(TypedHashMap<Byte,Object> params){
 
-		println("GameC: set face");
+		printlnA("GameC: set face");
 		if(!wait_mode) wait_mode=true;
 
 		String user_id=(String)params.get((byte)100);
@@ -737,8 +729,7 @@ class CGameScene extends GameScene{
 
 		final Base64 base64=new Base64();
 		byte[] image_bytes=base64.decode(encoded_image);
-		String file_name=Global_Param.CGame_File_Folder+"/user_"+user_id+nf(month(),2)+nf(day(),2)+nf(hour(),2)+nf(minute(),2)+nf(second(),2)+".png";
-                printlnA("save face at: "+file_name);
+		String file_name=Global_Param.CGame_File_Folder+"user_"+user_id+".png";
 		saveImage(file_name,image_bytes);
 
 		//PImage img=loadImage(file_path);
@@ -838,14 +829,14 @@ class CGameScene extends GameScene{
 	    	File file=new File(image_file_path);
 	    	FileOutputStream fos=new FileOutputStream(file);
 	        
-	    	System.out.println("save image "+file.getPath());
+	    	printlnA("save image "+file.getPath());
 
 	        fos.write(image_byte_array,0,image_byte_array.length);
 	        fos.flush();
 	        fos.close();
 
     	}catch(Exception e){
-    		System.out.println("Save Image Error!\n"+e);
+    		printlnA("Save Image Error!\n"+e);
     	}
 	
 	}
@@ -932,7 +923,7 @@ class CGameScene extends GameScene{
 		for(int i=0;i<_mavatar;++i){
 			ClockAvatar _avatar=clock_num.getAvatar(i);
 			PImage img_body=clock_people_movie.get(_avatar.icharacter).get(cur_frame);
-			if(img_body==null) println("image null: "+_avatar.icharacter+"-"+cur_frame);
+			if(img_body==null) printlnA("image null: "+_avatar.icharacter+"-"+cur_frame);
 			_avatar.draw(pg,img_body,ani_pos,ani_change);
 			// _avatar.draw(pg,people_movie.get(_avatar.icharacter).get(_avatar.getCurFrame()));
 		}
@@ -948,7 +939,7 @@ class CGameScene extends GameScene{
 		
 		int _mavatar=clock_num.getPosSize();
 		int _msrc=clock_num.getAvatarSize();
-		println("Update Clock: "+_msrc+" -> "+_mavatar);
+		printlnA("Update Clock: "+_msrc+" -> "+_mavatar);
 
 		if(_msrc>_mavatar){
 			for(int i=_msrc-1;i>=_mavatar;--i) clock_num.removeAvatar(i);
@@ -985,11 +976,11 @@ class CGameScene extends GameScene{
 			if(cindex<mfile){
 				String fpath=asort_file[cindex].f.getAbsolutePath();
 				arr_face[cindex]=loadImage(fpath);
-				println("Read Prev Face: "+fpath);	
+				printlnA("Read Prev Face: "+fpath);	
 			}else{
 				int idp=(int)random(MDEFAULT_FACE);
 				arr_face[cindex]=default_face.get(idp);	
-				println("Read Prev Face: "+"FACE_"+idp);	
+				printlnA("Read Prev Face: "+"FACE_"+idp);	
 			} 
 			cindex++;
 		}
