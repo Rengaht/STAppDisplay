@@ -93,7 +93,7 @@ class AvatarMotion{
 		speak_bubble=new SpeakBubble((int)random(10));
 
 	}
-	void update(ArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
+	void update(CopyOnWriteArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
 		switch(istage){
 			case BORN: // landing
 				
@@ -202,12 +202,12 @@ class AvatarMotion{
 		
 		return true;
 	}
-	void detectCollision(ArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
+	void detectCollision(CopyOnWriteArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
 		detectAvatarCollision(arr_motion);
 		detectBuildBlockCollision(arr_block);
 	}
 
-	void detectAvatarCollision(ArrayList<AvatarMotion> arr_motion){
+	void detectAvatarCollision(CopyOnWriteArrayList<AvatarMotion> arr_motion){
 		
 
 
@@ -374,7 +374,7 @@ class AvatarMotion{
 
 
 
-	void detectTalking(ArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
+	void detectTalking(CopyOnWriteArrayList<AvatarMotion> arr_motion,BuildBlock[] arr_block){
 
 		if(istage!=AvatarAction.WALK && istage!=AvatarAction.PAUSE) return;
 

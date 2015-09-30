@@ -5,7 +5,7 @@ import java.util.TimerTask;
 
 final String SERVER_IP="kerkerker.artgital.com:5055";
 //final String SERVER_IP="192.168.2.227:5055";
-final String SERVER_NAME="STPhotonServer";
+String SERVER_NAME="STPhotonServer";
 
 public class PhotonClient extends LoadBalancingClient implements Runnable{
 	
@@ -14,6 +14,9 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     boolean is_connected=true;
     boolean isReconnecting=false;
 
+
+    boolean pause_handle_message=false;
+
 	public PhotonClient(){
 		super();
 		
@@ -21,12 +24,12 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
 	@Override
 	public void run(){
 		if(this.connect()){
-			printlnA("Start Running!");
+			printlnA("[Photon] Start Running!",true);
 			while(true){
 				try{
 	               this.loadBalancingPeer.service();
 	            }catch(Exception e){
-                    printlnA("service error: "+e);
+                    printlnA("[Photon] Service error: "+e.getMessage(),true);
                 }
 				try{
 					Thread.sleep(60);
@@ -44,12 +47,12 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                         }
                     };
                     timer.schedule(task, 3000);
-                    printlnA(">>> Reconnect in 3 sec");
+                    printlnA("[Photon] Reconnect in 3 sec...",true);
                     isReconnecting=true;
                 }
 			}
 		}else{
-			printlnA("Connection Fail!");
+			printlnA("[Photon] Connection Fail!",true);
 		}
 		
 	}
@@ -93,7 +96,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void sendStartRunEvent(){
 
 
-        printlnA("--------- Send Start Run -----------");
+        printlnA("--------- Send Start Run -----------",true);
         HashMap<Object, Object> eventContent = new HashMap<Object, Object>();
         
         this.loadBalancingPeer.opRaiseEvent((byte)GameEventCode.LStartRun.getValue(), eventContent, false, (byte)0);       // this is received by OnEvent()
@@ -114,15 +117,16 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
     public void onStatusChanged(StatusCode statusCode){
         super.onStatusChanged(statusCode);
         
-        printlnA("OnStatusChanged: "+statusCode.name());
+        printlnA("[Photon] OnStatusChanged: "+statusCode.name(),true);
         
         switch(statusCode){
             case Connect:
-                printlnA("Connect!");
+                //printlnA("Connect!");
                 is_connected=true;
+                isReconnecting=false;
                 break;
             case Disconnect:
-                printlnA("Disconnect!");
+                //printlnA("Disconnect!");
                 is_connected=false;
                 isReconnecting=false;
                 break;
@@ -137,20 +141,21 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
      */
     @Override
     public void onEvent(EventData eventData){
-        // super.onEvent(eventData);
-        // println("got event!");
-        // println(eventData.Code);
+
+        
+        // if(pause_handle_message) return;
+
         GameEventCode rcv_event=GameEventCode.fromInt(eventData.Code.intValue());
         printlnA("--------------------\nEvent: "+rcv_event.toString()+"  "+millis());
 
 
         TypedHashMap<Byte,Object> params=eventData.Parameters;
 
-         if(params!=null){
-             for(Entry<Byte,Object> entry:params.entrySet()){
-                 println(entry.getKey()+" -> "+entry.getValue());
-             }
-         }else println("No Parmeters!");
+         // if(params!=null){
+         //     for(Entry<Byte,Object> entry:params.entrySet()){
+         //         println(entry.getKey()+" -> "+entry.getValue());
+         //     }
+         // }else println("No Parmeters!");
         //  printlnA("--------------------\n");
         
         try{
@@ -177,7 +182,7 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
               
                 
         }catch(Exception e){
-            printlnA(e.toString());
+            printlnA("[ERR][Photon] "+e.getMessage(),true);
 
         }
        // 
@@ -207,8 +212,8 @@ public class PhotonClient extends LoadBalancingClient implements Runnable{
                 setGame((Integer)params.get((byte)1));
                 break;
             case Server_LConnected:
-                setGame((Integer)params.get((byte)1));
-                printlnA("Connected as LED");
+                //setGame((Integer)params.get((byte)1));
+                printlnA("[Photon] Connected as LED",true);
                 break;
             case Server_Score_Success:
                 //println("Set Score Success");

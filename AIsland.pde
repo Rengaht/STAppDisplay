@@ -29,14 +29,17 @@ class AIsland{
 
 	AScore ascore;
 
-	ArrayList<AFlyScore> arr_score;
+	// ArrayList<AFlyScore> arr_score;
+	CopyOnWriteArrayList<AFlyScore> arr_score;
+
+	private Lock score_lock = new ReentrantLock();
 
 	ARainGroup rain_group;
 
 
 	AIsland(float set_posx,float set_posy,int color_type,boolean set_default){
 		
-		arr_score=new ArrayList<AFlyScore>();
+		arr_score=new CopyOnWriteArrayList<AFlyScore>();
 		
 
 		init(set_posx,set_posy);
@@ -45,7 +48,7 @@ class AIsland{
 
 		if(is_default) setName();			
 		
-		ascore=new AScore(color_type);
+		ascore=new AScore(color_type,4);
 		
 	}
 	
@@ -220,14 +223,25 @@ class AIsland{
 				pg.popMatrix();
 			} 
 						
-			if(rain_group!=null) rain_group.draw(pg,-80,-RAIN_THRES);
+			if(istage==AIslandAction.HOUSE && rain_group!=null) rain_group.draw(pg,-80,-RAIN_THRES);
 
+			// score_lock.lock();
 
 			pg.pushMatrix();
 			pg.translate(0,-120);
-				for(AFlyScore score:arr_score) 
+				// for(AFlyScore score:arr_score) 
+				// 	if(!score.isDead()) score.draw(pg);
+
+				Iterator<AFlyScore> it=arr_score.iterator();
+				while(it.hasNext()){
+					AFlyScore score=it.next();
 					if(!score.isDead()) score.draw(pg);
+				}
 			pg.popMatrix();
+
+			// score_lock.unlock();
+
+
 
 			if(!is_default && (istage==AIslandAction.TURB || istage==AIslandAction.HOUSE)){
 				float score_scale=.3;
@@ -245,7 +259,7 @@ class AIsland{
 	}
 	
 	void drawBuildGraph(PGraphics pg,PImage[] img_part,float px,float py){
-		
+		try{
 		pg.pushMatrix();
 			pg.translate(px,py);
 			pg.scale(.8);
@@ -287,7 +301,9 @@ class AIsland{
 				}
 			}
 		pg.popMatrix();
-		
+		}catch(Exception e){
+			printlnA("[ERR]Draw BuildGraph: "+e.getMessage(),true);
+		}
 	}
 	void drawBuildBorn(PGraphics pg,PImage build_img){
 		
@@ -354,6 +370,7 @@ class AIsland{
 		}
 		
 		
+		// score_lock.lock();
 		
 		// for(AScore score:arr_score) score.update();
 		Iterator<AFlyScore> it=arr_score.iterator();
@@ -363,10 +380,14 @@ class AIsland{
 		    if(score.isDead()){
 		    	acc_score+=score.mscore;
 		    	ascore.setScore(acc_score);
-		    	it.remove();		        	
+		    	//it.remove();		        	
+		    	arr_score.remove(score);
 		    } 
 		}
 		ascore.update();
+
+		// score_lock.unlock();
+
 
 
 		for(ABuildPart part:arr_build_part) 
@@ -440,9 +461,14 @@ class AIsland{
 	void addScore(int add_score,boolean trigger){
 		// acc_score+=add_score;
 		
+		// score_lock.lock();
+
 		AFlyScore score=new AFlyScore(add_score);
 		arr_score.add(score);
 		if(trigger) score.start();
+
+
+		// score_lock.unlock();
 
 	}
 }
@@ -471,7 +497,7 @@ class ABuildPart{
 		if(is_anim){
 			img_seq=new ImageSeq(60);
 			if(icat==3 && ipart>1) img_seq.reverse_looped=true;
-		}else img_seq=new ImageSeq(1);
+		}else img_seq=new ImageSeq(5);
 		
 		img_seq.looped=false;
 

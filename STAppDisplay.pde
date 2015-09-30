@@ -1,17 +1,26 @@
 import de.exitgames.api.loadbalancing.LoadBalancingClient;
 import de.exitgames.api.loadbalancing.LoadBalancingPeer;
+
 import java.security.Provider;
 import java.security.Security;
 import java.util.Enumeration;
-// import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.util.Collections;
 import java.util.Iterator;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Calendar;
 import java.util.Arrays;
+import java.util.concurrent.locks.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/* for slack */
+import net.gpedro.integrations.slack.*;
+import com.google.gson.JsonElement;
+
 
 import processing.video.*;
+
+String SLACK_TAG="";
 
 boolean DRAW_DEBUG=false;
 boolean OFFLINE=false;
@@ -47,6 +56,7 @@ PShader shd_rmv_bg;
 
 PVector scale_to_screen;
 
+SlackApi slack_hook;
 
 public void init(){
 	if(!DRAW_FRAME){
@@ -64,26 +74,31 @@ public void init(){
 }
 void setup(){
 	
-	frame.setLocation(0,0);
-
+	
 	Global_Param=new GlobalParameter(PARAM_FILE_PATH);
 	Global_Param.readParameters();
-
 	scale_to_screen=new PVector(Global_Param.Display_Size.x/ORIGIN_DISPLAY_WIDTH,Global_Param.Display_Size.y/ORIGIN_DISPLAY_HEIGHT);
+	
+	SLACK_TAG=Global_Param.Slack_Tag;
+	SERVER_NAME=Global_Param.Server_Name;
 
-	frameRate(60);
+	frame.setLocation(0,0);
 	size((int)Global_Param.Window_Size.x,(int)Global_Param.Window_Size.y,P3D);
-      
-        noCursor();
-
+    noCursor();
+	frameRate(60);
+	
 	gapplet=this;
 	
+	/* Init Slack */
+	slack_hook=new SlackApi("https://hooks.slack.com/services/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");
+
+
 	if(WRITE_LOG){
 		String log_name="log/STDisplayLog_"+year()+nf(month(),2)+nf(day(),2)+nf(hour(),2)+nf(minute(),2)+".txt";
 		println("Create Log: "+log_name);
 		log_output=createWriter(log_name);	
-		printlnA("STDisplay Start!");
-		//initLogger(log_name,"ALL");
+		printlnA("STDisplay Start!",true);
+
 	} 
 
 
@@ -173,7 +188,7 @@ void draw(){
 	}
 
 
-	frame.setTitle(String.valueOf(frameRate));
+	// frame.setTitle(String.valueOf(frameRate));
 
 	if(DRAW_DEBUG){
 		if(OFFLINE) str_log+="OFFLINE\n";
@@ -196,7 +211,7 @@ void draw(){
 void setGame(int game_index){
 	// game_index-=101;
 
-	printlnA("Set Game : "+game_index);
+	printlnA("Set Game : "+game_index,true);
 
 	if(game_index<0 || game_index>MGAME-1) return;
 
@@ -209,10 +224,15 @@ void setGame(int game_index){
 	 } 
 
 }
-
 void printlnA(String str_print){
+	printlnA(str_print,false);
+}
+void printlnA(String str_print,boolean send_slack){
 	println(str_print);
 	log_output.println(getTimeStamp()+str_print);
+
+	if(send_slack) slack_hook.call(new SlackMessage(SLACK_TAG+str_print));
+
 }
 
 String getTimeStamp(){

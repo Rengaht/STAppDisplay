@@ -40,8 +40,12 @@ class ClockAvatarNumber{
 	void updateAvatar(int aindex){
 		printlnA("Update Clock Avatar: "+aindex);
 		ClockAvatar _avatar=arr_avatar.get(aindex);
-		_avatar.updatePos(arr_num_pos.get(aindex),
-							new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1)));
+		try{
+			_avatar.updatePos(arr_num_pos.get(aindex),
+								new PVector(arr_num_pos.get(aindex).x+random(5,10)*(random(2)<1?1:-1),arr_num_pos.get(aindex).y+random(5,10)*(random(2)<1?1:-1)));
+		}catch(Exception e){
+			printlnA("Update Pos Exception: "+e.getMessage());
+		}
 	}
 	void removeAvatar(int aindex){
 		printlnA("Rmv Clock Avatar: "+aindex);

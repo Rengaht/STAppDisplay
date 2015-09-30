@@ -86,7 +86,7 @@ class IconLine{
 	void startExplode(PImage set_text){
 		if(!is_explode && !ani_explode.ani_start){
 
-			println("Icon Explode!");
+			// println("Icon Explode!");
 			ani_explode.Restart();
 			
 			is_explode=true;	
@@ -188,7 +188,7 @@ class IconGen{
 		}
 	}
 	void addToIconLine(float new_delay){
-		println("ADD TO ICON LINE!");
+		// println("ADD TO ICON LINE!");
 		int new_ic=(random(3)>1)?(int)random(ITRANSCAR):ITRANSCAR+(int)random(2);
 		for(IconLine icline:arr_icon_line) icline.addNewIcon(new_ic,new_delay);
 	}

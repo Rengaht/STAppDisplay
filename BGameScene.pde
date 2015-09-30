@@ -149,7 +149,7 @@ class BGameScene extends GameScene{
 
 		super.Init();
 		
-		printlnA("--------- Game B Init ---------");
+		printlnA("Game B Init!!",true);
 		
 
 
@@ -258,15 +258,13 @@ class BGameScene extends GameScene{
 				 	one_arrive=true;
 				 	iwinner=i;
 				 	printlnA("Car "+i+" ARRIVE!!");
+
+				 	// photon_client.pause_handle_message=true;
+				 	endRound();
 				 	break;
 				 }
 			}
-			if(one_arrive){
-				 
-				 int[] scores=GetScores();
-				 // if(!OFFLINE) photon_client.sendScoreEvent(scores[0],scores[1]);
-				 endRound();
-			}
+			
 		}else{
 			
 		}
@@ -501,14 +499,14 @@ class BGameScene extends GameScene{
 				}
 				break;
 			case Server_Score_Success:
-
+				printlnA("----- End Round  Winner: "+iwinner+" -----",true);
 				break;
 			case Server_LGG:
-				printlnA("------The End------");
+				printlnA("------The End------",true);
 				this.EndGame();
 				break;
 			default :
-				printlnA("Illegal event: "+event_code.toString());
+				printlnA("[WARN] Illegal event: "+event_code.toString(),true);
 				break;	
 		}
 
@@ -521,6 +519,8 @@ class BGameScene extends GameScene{
 
 	@Override
 	void StartGame(){
+
+		printlnA("Start Game!!!",true);
 
 		if(timer_sleep!=null){
 			timer_sleep.cancel();
@@ -576,15 +576,23 @@ class BGameScene extends GameScene{
 	}
 	void endRound(){
 
-		printlnA("----- End Round -----");
+		
+
+		
+		
+		println("Stop movie!");
 		mov_road_left.pause();
 		mov_road_right.pause();
-
 		
 		for(EnergyCar car:arr_car) car.stopRun();
 		for(IconLine icon:arr_icon_line) icon.pause();
 
+		//printlnA("----- End Round -----",true);
+		
+		super.EndGame();
+
 		if(!OFFLINE){
+			println("Send Score");		
 			int send_icar1=arr_car[0].cur_icar;
 			if(send_icar1==-1) send_icar1=8;
 			int send_icar2=arr_car[1].cur_icar;
@@ -593,8 +601,10 @@ class BGameScene extends GameScene{
 			photon_client.sendScoreEvent(arr_car[0].getScore(),arr_car[1].getScore(),send_icar1,send_icar2);	
 		} 
 
-		super.EndGame();
 
+		printlnA("----- End Round  Winner: "+iwinner+" -----",false);
+
+		
 		timer_sleep=new Timer();
         TimerTask task=new TimerTask(){
             @Override
@@ -603,7 +613,9 @@ class BGameScene extends GameScene{
             }
         };
         timer_sleep.schedule(task, 5000);
-		// this.Init();
+		
+		// photon_client.pause_handle_message=false;
+
 	}
 
 	@Override

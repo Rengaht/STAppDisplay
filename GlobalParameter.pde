@@ -12,7 +12,7 @@ class GlobalParameter{
 	String CGame_File_Folder;
 
 	
-
+	String Slack_Tag;
 
 	GlobalParameter(String open_file){
 		file_name=open_file;
@@ -37,11 +37,15 @@ class GlobalParameter{
 
 		Display_Loc=new PVector(ojson.getFloat("Display_Loc_X"),ojson.getFloat("Display_Loc_Y"));
 		Display_Size=new PVector(ojson.getFloat("Display_Size_X"),ojson.getFloat("Display_Size_Y"));
+		//Display_Size=new PVector(displayWidth,displayHeight);
 
 		Window_Size=new PVector(ojson.getFloat("Window_Size_X"),ojson.getFloat("Window_Size_Y"));
+		//Window_Size=new PVector(displayWidth,displayHeight);
 
 		Left_Screen_X=ojson.getInt("Left_Screen_X");
 		Right_Screen_X=ojson.getInt("Right_Screen_X");
+
+		Slack_Tag=ojson.getString("Slack_Tag");
 
 	}
 	void saveParameters(){
@@ -68,6 +72,7 @@ class GlobalParameter{
 		ojson.setInt("AGame_Background_Span_Minute",AGame_Background_Span_Minute);
 
 		ojson.setString("CGame_File_Folder",CGame_File_Folder);
+		ojson.setString("Slack_Tag",Slack_Tag);
 
 		saveJSONObject(ojson,file_name);
 
@@ -100,6 +105,7 @@ class GlobalParameter{
 		ojson.setInt("AGame_Background_Span_Minute",2);
 
 		ojson.setString("CGame_File_Folder","F://kerker_face");
+		ojson.setString("Slack_Tag","#ONLINE_PC#  ");
 
 		saveJSONObject(ojson,file_name);
 		

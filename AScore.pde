@@ -50,19 +50,22 @@ class AFlyScore{
 // score on island
 class AScore{
 	
-	int mnum=4;
+	int mnum=5;
 	int cur_score,dest_score;
 	FrameAnimation[] ani_cur_change,ani_dest_change;
 	int[] arr_cur_num,arr_dest_num;
 	int color_type;
 
-	AScore(int set_type){
-		setup(set_type,false);
+	AScore(int set_type,int set_mnum){
+		setup(set_type,false,set_mnum);
 	}
-	AScore(int set_type,boolean go_fast){	
-		setup(set_type,go_fast);
+	AScore(int set_type,boolean go_fast,int set_mnum){	
+		setup(set_type,go_fast,set_mnum);
 	}
-	void setup(int set_type,boolean go_fast){
+	void setup(int set_type,boolean go_fast,int set_mnum){
+
+		mnum=set_mnum;
+
 		cur_score=dest_score=0;
 		arr_cur_num=new int[mnum];
 		for(int i=0;i<mnum;++i) arr_cur_num[i]=0;
@@ -86,7 +89,7 @@ class AScore{
 
 		pg.pushMatrix();
 		pg.translate(x,y);
-		pg.translate(85*(mnum/2-1),0);
+		pg.translate(85*((float)mnum/2-1),0);
 		
 
 			for(int i=0;i<mnum;++i){
@@ -142,14 +145,17 @@ class AScore{
 		// if(set_score==cur_score) return;
 
 		dest_score=set_score;
-		arr_dest_num[0]=dest_score%10;
-		arr_dest_num[1]=floor(dest_score/10)%10;
-		arr_dest_num[2]=floor(dest_score/100)%10;
-		arr_dest_num[3]=floor(dest_score/1000)%10;
-
-		if(arr_dest_num[3]>9){
-			for(int i=0;i<mnum;++i) arr_dest_num[i]=9;				
+		for(int i=0;i<mnum;++i){
+			arr_dest_num[i]=floor(dest_score/pow(10,i))%10;
 		}
+		// arr_dest_num[0]=dest_score%10;
+		// arr_dest_num[1]=floor(dest_score/10)%10;
+		// arr_dest_num[2]=floor(dest_score/100)%10;
+		// arr_dest_num[3]=floor(dest_score/1000)%10;
+
+		// if(arr_dest_num[3]>9){
+		// 	for(int i=0;i<mnum;++i) arr_dest_num[i]=9;				
+		// }
 		println("Set score: "+dest_score);
 		
 		for(int i=0;i<mnum;++i){

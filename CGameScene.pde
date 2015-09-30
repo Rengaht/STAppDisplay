@@ -24,7 +24,7 @@ class CGameScene extends GameScene{
 
 	// ArrayList<FaceAvatar> arr_avatar_left;
 	// ArrayList<FaceAvatar> arr_avatar_right;
-	ArrayList<FaceAvatar> arr_avatar;//_center;
+	CopyOnWriteArrayList<FaceAvatar> arr_avatar;//_center;
 	
 	Movie[] back_movie;
 	PImage[] arr_front_building;
@@ -226,7 +226,7 @@ class CGameScene extends GameScene{
 	@Override
 	void Init(){
 		super.Init();
-
+		printlnA("Game C Init!!",true);
 		// if(clock_mode){
 		// 	initClockMode();
 		// 	return;
@@ -236,7 +236,7 @@ class CGameScene extends GameScene{
 		// arr_avatar_left=new ArrayList<FaceAvatar>();
 		// arr_avatar_right=new ArrayList<FaceAvatar>();
 
-		if(arr_avatar==null) arr_avatar=new ArrayList<FaceAvatar>();
+		if(arr_avatar==null) arr_avatar=new CopyOnWriteArrayList<FaceAvatar>();
 		else arr_avatar.clear();
 
 		// for(int i=0;i<MPEOPLE/2;++i){
@@ -253,8 +253,7 @@ class CGameScene extends GameScene{
 		for(int i=0;i<MPEOPLE;++i){
 			addNewFace("",arr_default_face[i],(int)random(12));
 		}
-		println("#avatar= "+arr_avatar.size());
-
+		
 		// for(FaceAvatar face:arr_avatar_left){
 		// 	face.mmotion.istage=AvatarAction.WALK;
 		// 	//face.mmotion.mscale=1;	
@@ -388,14 +387,17 @@ class CGameScene extends GameScene{
 		Iterator<FaceAvatar> iter=arr_avatar.iterator();
 		while(iter.hasNext()){
 			FaceAvatar face=iter.next();
-			if(face.isDead()) iter.remove();
+			if(face.isDead()) arr_avatar.remove(face);
 		}
 
-		Collections.sort(arr_avatar,new Comparator<FaceAvatar>(){
+		ArrayList<FaceAvatar> tmpa=new ArrayList<FaceAvatar>(arr_avatar);
+		Collections.sort(tmpa,new Comparator<FaceAvatar>(){
             public int compare(FaceAvatar o1, FaceAvatar o2){
                 return o1.getDepth().compareTo(o2.getDepth());
             }
         });
+        int marr=tmpa.size();
+        for(int i=0;i<marr;++i) arr_avatar.set(i,tmpa.get(i));
 
 
         // ani_giraffe.Update();
@@ -645,6 +647,31 @@ class CGameScene extends GameScene{
 
 		if(clock_mode){
 			sub_pg.image(arr_clock_movie[2],0,0);
+
+			sub_pg.pushMatrix();
+			sub_pg.translate(-Global_Param.Left_Screen_X,0);
+
+			for(int i=0;i<2;++i){
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+45+clock_margin_x*(2.6+i),clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[3+i]);				
+				sub_pg.popMatrix();
+			}
+
+			sub_pg.popMatrix();
+
+			sub_pg.pushMatrix();
+			sub_pg.translate(Global_Param.Right_Screen_X-Global_Param.Left_Screen_X,0);
+
+			for(int i=0;i<2;++i){
+		
+				sub_pg.pushMatrix();
+				sub_pg.translate(clock_base_x+clock_margin_x*i,clock_base_y);
+					drawClockNumber(sub_pg,arr_clock_number[5+i]);				
+				sub_pg.popMatrix();
+			}
+			sub_pg.popMatrix();
+
 			return;
 		}
 
@@ -679,7 +706,7 @@ class CGameScene extends GameScene{
 	@Override
 	void HandleEvent(GameEventCode event_code,TypedHashMap<Byte,Object> params){
 		
-		println("GameC Got Event: "+event_code.toString());
+		printlnA("GameC Got Event: "+event_code.toString());
 		switch(event_code){
 			case Server_Set_Face:
 				show_qrcode=false;
@@ -687,16 +714,16 @@ class CGameScene extends GameScene{
 				// if(game_state==GameState.Wait) game_state=GameState.PLAY;
 				break;
 			case Server_LGG:
-				println("------The End------");
+				printlnA("------The End------",true);
 				EndGame();
 				break;
 			case Server_LClockMode:
-				println("------Clock Mode------");
+				printlnA("------Clock Mode------",true);
 				setClockMode(true);
 				break;
 
 			default :
-				println("illegal event: "+event_code.toString());
+				printlnA("[WARN] Illegal event: "+event_code.toString(),true);
 				break;	
 		}
 
@@ -738,7 +765,8 @@ class CGameScene extends GameScene{
 		final Base64 base64=new Base64();
 		byte[] image_bytes=base64.decode(encoded_image);
 		String file_name=Global_Param.CGame_File_Folder+"/user_"+user_id+nf(month(),2)+nf(day(),2)+nf(hour(),2)+nf(minute(),2)+nf(second(),2)+".png";
-                printlnA("save face at: "+file_name);
+        printlnA("Get and Save face at: "+file_name,true);
+		
 		saveImage(file_name,image_bytes);
 
 		//PImage img=loadImage(file_path);
@@ -838,14 +866,14 @@ class CGameScene extends GameScene{
 	    	File file=new File(image_file_path);
 	    	FileOutputStream fos=new FileOutputStream(file);
 	        
-	    	System.out.println("save image "+file.getPath());
+	    	printlnA("save image "+file.getPath());
 
 	        fos.write(image_byte_array,0,image_byte_array.length);
 	        fos.flush();
 	        fos.close();
 
     	}catch(Exception e){
-    		System.out.println("Save Image Error!\n"+e);
+    		printlnA("[ERR] Save Image Error!\n"+e,true);
     	}
 	
 	}
@@ -932,7 +960,7 @@ class CGameScene extends GameScene{
 		for(int i=0;i<_mavatar;++i){
 			ClockAvatar _avatar=clock_num.getAvatar(i);
 			PImage img_body=clock_people_movie.get(_avatar.icharacter).get(cur_frame);
-			if(img_body==null) println("image null: "+_avatar.icharacter+"-"+cur_frame);
+			if(img_body==null) printlnA("[ERR] image null: "+_avatar.icharacter+"-"+cur_frame,true);
 			_avatar.draw(pg,img_body,ani_pos,ani_change);
 			// _avatar.draw(pg,people_movie.get(_avatar.icharacter).get(_avatar.getCurFrame()));
 		}
@@ -950,50 +978,69 @@ class CGameScene extends GameScene{
 		int _msrc=clock_num.getAvatarSize();
 		println("Update Clock: "+_msrc+" -> "+_mavatar);
 
-		if(_msrc>_mavatar){
-			for(int i=_msrc-1;i>=_mavatar;--i) clock_num.removeAvatar(i);
-		}
-
-		for(int i=0;i<_mavatar;++i){
-			if(i<_msrc){
-				clock_num.updateAvatar(i);
-			}else{
-				FaceAvatar face=arr_avatar.get((from_findex+i)%total);
-				clock_num.addAvatar(i,face.icharacter,face.face_image);
+		try{
+		
+			if(_msrc>_mavatar){
+				for(int i=_msrc-1;i>=_mavatar;--i) clock_num.removeAvatar(i);
 			}
+
+			for(int i=0;i<_mavatar;++i){
+				if(i<_msrc){
+					clock_num.updateAvatar(i);
+				}else{
+					FaceAvatar face=arr_avatar.get((from_findex+i)%total);
+					clock_num.addAvatar(i,face.icharacter,face.face_image);
+				}
+			}
+			clock_num.startChange();
+		
+		}catch(Exception e){
+			printlnA("Update Clock Avatar Exception: "+e.getMessage(),true);
 		}
-		clock_num.startChange();
 
 		return from_findex+_mavatar-1;
 	}
 	PImage[] getLatestFace(int count){
 		PImage[] arr_face=new PImage[count];
+		
+		try{
+			File folder=new File(Global_Param.CGame_File_Folder);
+		
+			File[] afile=folder.listFiles();
+			int mfile=afile.length;
 
-		File folder=new File(Global_Param.CGame_File_Folder);
-		File[] afile=folder.listFiles();
-		int mfile=afile.length;
+			SortFile[] asort_file=new SortFile[mfile];
 
-		SortFile[] asort_file=new SortFile[mfile];
+			for(int i=0;i<mfile;++i){
+				asort_file[i]=new SortFile(afile[i]);
+			}
+			Arrays.sort(asort_file);
 
-		for(int i=0;i<mfile;++i){
-			asort_file[i]=new SortFile(afile[i]);
-		}
-		Arrays.sort(asort_file);
+			int cindex=0;
+			while(cindex<count){
+				if(cindex<mfile){
+					String fpath=asort_file[cindex].f.getAbsolutePath();
+					arr_face[cindex]=loadImage(fpath);
+					printlnA("Read Prev Face: "+fpath);	
+				}else{
+					int idp=(int)random(MDEFAULT_FACE);
+					arr_face[cindex]=default_face.get(idp);	
+					printlnA("Read Prev Face: "+"FACE_"+idp);	
+				} 
+				cindex++;
+			}
+		}catch(Exception e){
 
-		int cindex=0;
-		while(cindex<count){
-			if(cindex<mfile){
-				String fpath=asort_file[cindex].f.getAbsolutePath();
-				arr_face[cindex]=loadImage(fpath);
-				println("Read Prev Face: "+fpath);	
-			}else{
+			printlnA("[ERR] Read Face Fail! "+e.getMessage());
+
+			int cindex=0;
+			while(cindex<count){
 				int idp=(int)random(MDEFAULT_FACE);
 				arr_face[cindex]=default_face.get(idp);	
-				println("Read Prev Face: "+"FACE_"+idp);	
-			} 
-			cindex++;
+				printlnA("Read Prev Face: "+"FACE_"+idp);	
+				cindex++;
+			}
 		}
-
 		return arr_face;
 	}
 }

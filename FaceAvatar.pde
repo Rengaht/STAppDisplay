@@ -187,8 +187,8 @@ class FaceAvatar{
 		mmotion.update(null,null);
 		
 	}
-	void update(ArrayList<FaceAvatar> arr_avatar,BuildBlock[] arr_build){
-		ArrayList<AvatarMotion> arr_motion=new ArrayList<AvatarMotion>();
+	void update(CopyOnWriteArrayList<FaceAvatar> arr_avatar,BuildBlock[] arr_build){
+		CopyOnWriteArrayList<AvatarMotion> arr_motion=new CopyOnWriteArrayList<AvatarMotion>();
 		for(FaceAvatar av:arr_avatar) 
 			if(av!=this) arr_motion.add(av.mmotion);
 
