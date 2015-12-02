@@ -695,16 +695,41 @@ class AGameScene extends GameScene{
 	PImage[] getBuildPartImage(ABuildPart[] arr_part){
 		int mpart=arr_part.length;
 		
-		PImage[] img_part=new PImage[mpart+1];
+		PImage[] img_part=new PImage[9];
 		
 		img_part[0]=img_island;
 		
 		for(int i=0;i<mpart;++i){
-			img_part[i+1]=getBuildPart(arr_part[i]);
+			if(arr_part[i]==null) continue;	
+			
+			int layer=getPartLayer(arr_part[i].icat,arr_part[i].ipart);
+			img_part[layer]=getBuildPart(arr_part[i]);
 		}
 		
 		return img_part;
 	}
+	private int getPartLayer(int icat,int ipart){
+
+        switch(icat){
+            case 0:
+                return 1;
+            case 1:
+                if(ipart==3) return 6;
+                else return 3;
+            case 2:
+                return 7;
+            case 3:
+                if(ipart<2) return 2;
+                return 5;
+            case 4:
+                return 4;
+            case 5:
+             	return 8;
+        }
+        println("ERR part: "+icat+" "+ipart);
+        return -1;
+    }
+
 	PImage getBuildPart(ABuildPart build_part){
 		
 		if(build_part==null) return null;

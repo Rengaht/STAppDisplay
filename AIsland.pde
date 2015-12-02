@@ -1,6 +1,8 @@
 class AIsland{
 
 	final int ORDER_PART[]={0,1,3,2,4,5};
+	final int MLAYER=8;
+	final int MPART=6;
 
 	float _pscale;
 	PVector _pos;
@@ -78,8 +80,8 @@ class AIsland{
 	void reset(){
 		_pscale=1;	
 
-		arr_build_part=new ABuildPart[6];
-		for(int i=0;i<6;++i) arr_build_part[i]=null;
+		arr_build_part=new ABuildPart[MPART];
+		for(int i=0;i<MPART;++i) arr_build_part[i]=null;
 
 		pg_build=null;
 		pg_text=null;
@@ -181,27 +183,28 @@ class AIsland{
 			pg.translate(_pos.x+move_amp.x*sin((float)frameCount/move_vel.x+move_phi.x),_pos.y+move_amp.y*cos((float)frameCount/move_vel.y+move_phi.y));
 		}
 
+			/* draw land */
 			if(img_part[0]!=null) pg.image(img_part[0],0,0);
 
 			
-			drawBuildGraph(pg,img_part,0,-75);
+			drawBuildGraph(pg,img_part,0,-90);
 				
 
-			// draw people
-			if(img_part[6]!=null){
+			/* draw people */
+			if(img_part[8]!=null){
 				pg.pushMatrix();
 				pg.translate(60,-42);
 				// pg.scale(ani_man_born.GetPortion());
-				if(img_part[6]!=null){
-					float twid=img_part[6].width;
-					float thei=img_part[6].height;
+				if(img_part[8]!=null){
+					float twid=img_part[8].width;
+					float thei=img_part[8].height;
 					float offy=0;
 					float tport=ani_man_born.GetPortion();
 					pg.textureMode(IMAGE);
 					pg.noStroke();
 
 					pg.beginShape();
-					pg.texture(img_part[6]);
+					pg.texture(img_part[8]);
 						pg.vertex(-twid/2,thei/2-(thei-offy)*tport-offy,0,0);
 						pg.vertex(twid/2,thei/2-(thei-offy)*tport-offy,twid,0);
 						pg.vertex(twid/2,thei/2,twid,(thei-offy)*tport+offy);
@@ -267,13 +270,14 @@ class AIsland{
 
 			float tport=ani_house_born.GetPortion();
 
-			for(int x=0;x<5;++x){
-				int i=ORDER_PART[x]+1;
+			for(int x=1;x<MLAYER;++x){
+				//int i=ORDER_PART[x]+1;
+				int i=x;
 
 				if(img_part[i]!=null){
-					if(arr_build_part[i-1].is_light && !cat3_light_on) continue; 
-					// pg.image(img_part[i],0,0);
-
+					//if(arr_build_part[i-1].is_light && !cat3_light_on) continue; 
+					if(i==2 && !cat3_light_on) continue; 
+					
 					float twid=img_part[i].width;
 					float thei=img_part[i].height;
 					float offy=0.3*thei;
